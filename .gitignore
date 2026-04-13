@@ -1,0 +1,6 @@
+COCO/
+__pycache__/
+*.pyc
+.env
+.venv
+application/tadsx/

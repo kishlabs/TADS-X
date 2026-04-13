@@ -1,0 +1,1062 @@
+All right, good evening, students. Welcome to DBCon India Design Contest.
+So, a very warm welcome to all of you. I'm Sehur Srinivas, Director with Marvel Semiconductor and Divicon India Design Contest Chair. I have with me,
+Dr. Sati Gupta from VLSA Society of India.
+Dr. Vivek Chaturvedi, Triple IT, sorry, IIT Palakat, as Academia Collaboration Chair. Dr. Bhivas Ghoshal, Triple IT Allahabad, Academia Collaboration Co-Chair. Mr. Upu Leknayaka, Angular Sri Lanka Liaison.
+Mr. Libin and Mr. Keith, the team from Sidhaktirvanandhapara.
+So today, I will, in the next one hour, we will give you an introduction to DVCon, followed by Dr. Sadi Gupta addressing the participants. We will talk about design contest, what it is all about.
+post that Dr. Vivek Chattervedi will share with you the problem statement of this year. And, Mr. Keith.
+Fernandez from Center for Advanced Computing Theorem in the Param will be explaining to you about the Vega processor.
+Since this is a webinar, please type in your questions in the Q&A session, and we will answer to you at the end.
+Okay, so before getting into the design contest, I would like to talk to you about Design Verification Conference. So this conference is executed in close collaboration between industry and academia.
+And this is a great technical platform to contribute to new ideas, standards, methodology, and flow in RTL design and verification.
+So we get industry sponsors and exhibitors to help them develop market for their products and services.
+While students get access to knowledge management by learning latest developments and trends, and also exchange industries best practices.
+Students will also get an opportunity to share their thoughts, ideas, and experiments through ecosystem networking.
+Okay, so here is, our history and growth timeline of, Axelara and DVCon, in general. So, the original event had different names and, were tied to VHDL International and Open Verilog International. Eventually.
+VHDL and Verilog focus groups merged into a single conference and became DVCon in 2003.
+So the, papers were written and presented by users, not just papers about products, paid by sponsors, and the panel sessions on current topics, tutorials, and related, events, about the different standards that we are following.
+Okay? And Design Verification Conference and Exhibition has been successfully sponsored by Axillara in the United States for more than 30 years. And if you see here, in the last year, DBCon India, completed 10th year, and from this year onwards, we have made it as a 3-day conference in India.
+Okay? Now, what is Accelera System Initiative? So, this is a…
+platform provided in which the electronics industry can collaborate to innovate and deliver global standards that improve design and verification productivity for electronics products. So, you can also see the different
+Different, the,
+standards that are, being, initiated by Axelara. That is, that includes a portable stimulus system, System C, System Verilog, IP exact, and many more.
+Okay, so Divicon also has a broad industry support with corporate members, associate members, startups, and universities, as listed here.
+And Auxiliary System Initiative, it consists of a board of directors, whom, in turn, will have a technical committee and IEEE working groups reporting to.
+And Axelara Technical Committee, develops several industry standard defining… industry defining standards, which includes, System Verilog, UVM, System C, IP Exact, System RDL, OpenCore, Protocol, etc.
+Okay? Coming to Axelara standards and initiatives, this includes IP exact and, portable, portable stimulus. We have System Verilog, UVM, OVL, System C and AMS, and many more.
+And there are also activities like standard development, user guides, reference implementations, verification libraries, proof of concept, white papers, etc.
+Okay? Anxillera also has a very strong partnership with IEEE, where some of the standards are available for free. There is also an ongoing collaboration with IEEE Standards Association.
+Now, we will get into what is Design Contest. So, Design Contest is run in partnership with, IIT Palakad, CDAC, and VLSI Society of India. I would like to welcome Dr. Saty Gupta to share a few words with the students.
+Dr. Satya Gupta
+Dr. Satya Gupta
+00:06:08
+Good evening, and thank you for this opportunity to collaborate between the
+very strong DVCon platform, and VLSI Society of India.
+I believe, basically, in the chip design world, right? If you…
+talk to anybody. The… the most important, and the most time-consuming activity is design and verification. And, I think,
+All the leaders of the industry and academia understand that basically both
+From a chip design perspective and employment perspective, design and verification has the largest share of, basically, activities.
+And Divicon and Accelera have been basically playing a major role in bringing down these technologies to students through Divicon platform.
+This conference is going to have multiple facets, but at the end of the day.
+It is meant for the students, so utilize this opportunity.
+to be at Divicon, and also, participate in the design contrast.
+where you will learn two very important, basically, skills. One thing is, you will know
+about RISC-Fi processor, which is, in my opinion, one of the excellent platforms to learn the chip design and the processor architectures, and what we do in the industry from a day-to-day point of view, right? So…
+Having…
+knowledge about RISC-V itself is very important, and then on top of it, if you can basically, create your own design and verification environment as part of this,
+design… Contest, right?
+I think… That's the best way to get initiated in learning.
+the critical aspect of design and verification for the chip design, and then subsequently, you can take that knowledge and doing the other parts of the chip design also. But this is an excellent start, and I applaud I.D. Palakar, CDAC, and other participants who are
+Basically, putting their time and energy to make this design contest.
+one of the, basically, most important design contests, for the student across, basically, now we have about 400 to 500, colleges who are having interest in chip design and VLSI, and, I hope that
+Most of these colleges can… will participate in this design contest and, make it a huge success. Not for the organizer alone, but for themselves, so that they can learn the
+Best Practices in… LISP 5 world, as well as design and verification.
+Vlsi Society has been…
+associated with DVCon for, last 5 years or so, and, not just the design contest, we are in complete support of, basically, this conference, and, help wherever we can. Obviously, the students will need,
+Lot of, basically, hand-holding and support during this design contest process. And we are all there to basically help you out, guide you, and basically make you successful.
+You can all basically reach out to us through the platform, like LinkedIn, and put your request up if you have any, basically, questions or guidance needed. So, all the best.
+Make the best use of this platform, and make the, basically, best use of this opportunity, so that you can become a valuable professional for this industry, and contribute to the
+past time for VLSI design and semiconductor in India. I think this is the decade where, basically, India will… you can say it's the golden decade for semiconductor and VLSI design in India, and, you will be, basically, soon become
+part of this industry, and start, basically, driving the innovation and designs in this area. So, once again, all the best.
+to all of you, and also the organizing team of IIT Palakar and CDAC. Thank you so much.
+Seru Srinivas
+Seru Srinivas
+00:11:13
+Thank you, sir.
+Let me, take you all through the,
+design contest and what happened in the past couple of years. So, we, had DVCon India, expanding its focus to increase participation from academy and universities.
+And a hackathon was started in 2022, and in 2023, we moved it into a design contest.
+So this is a unique opportunity for students to learn about RISC-V processors, and probably in the future, we will move out of RISC-V and do something else as a problem statement.
+But in the past 3 years, we have been working on the problem statement, around RISC-V processors, and in the year 2024, we had 158 teams who joined us, or who registered.
+And last year it became 337, and this year it has become 600. So, congratulations to all of you to be, part of this great effort in learning.
+Okay, so here is our design contest team, who won last year's, prizes, from, SVNIT, from University of Moritoa, and, Triple IT Corte. These were our winners last year.
+Okay? And throughout this program, you will all be mentored by Dr. Vivek Chaturvedi from IIT Palakat, Opul Ekanayaka from Axelar, Dr. Bibas Ghoshal from Triple IT Allahabad.
+Sdac team, Mr. Krishnakumar Rao, Mr. Keith, Libin, Premjeith, all of them will be helping you, mentoring you throughout this design contest.
+Okay? Here is a schedule for design contest. The same is also there in our DVCon website. You can go through it in detail. I will talk about the first one. So, we are here today on the problem statement announcement, and
+from tomorrow till 10th March will be the stage 1, where the planning and idea submission should happen, and on 10th March, you will need to submit your, your idea. We will be given a template
+on, how you need to, put your report together, and, that will be explained to you by, Dr. Vivek.
+Okay? And, you would have seen my mail a couple of days back. We need to have a team size of 2 or 3. This is because we would want you to learn everything, and if it is only one person, you will find it difficult to complete the process.
+So that's the reason why we suggested a team size of 2 or 3. So if any of you are with more than that in your team, please let me know. I will help you, add maybe a couple of more people and have one more registration.
+Okay? And all the team members should be currently pursuing academics. You should be in the second or third year of BEB Tech, or in MTech or ME, or it could be… you could be a PhD scholar also.
+We will require a bona fide certificate from your educational institution, and you can submit it by end of March. We are okay until then, sorry, end of April. By then, we would want you to, get a certificate, or an email from your HOD.
+Okay, next we will go to the problem statement, and I would request, Dr. Vivek to, chime in.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+00:15:21
+Fisher.
+Hi, good evening, everyone. First of all, let me…
+really congratulate you all for, you know, at least, you know, coming and hearing us out. This is a very great platform, okay? This is a very great event, and I think through this event, you are going to have a lot of learning.
+And we are really, really at this, you know, very, very happy, because this time we have seen a very large registration, and we are very excited about it.
+Now, coming to the problem statement, you know, you see, we have been, you know, we have a history where every year we bring out.
+libin@cdac.in
+libin@cdac.in
+00:15:57
+Hello, Oakland?
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+00:15:59
+Very nice and interesting problem.
+So this year also, we have come up with a very interesting problem for you to solve.
+Okay? So, what is the genesis of this problem?
+So typically, when we look into any kind of, you know, object detection.
+We typically see that most of the models which do object detection, they are just, you know, agnostic to
+you know, they are basically tasking constituents, okay? So if you see this example, which is there on the screen, and there are two images in front of you, okay? In one image, there's somebody trying to pour a glass of wine.
+And in the second image, there's a cat with a cup, right?
+Now, if I give this… these two images to a general detection, you know, they can detect glasses, they can detect, you know, person, they can detect a cat, or a cup.
+But now, when I…
+ask you that, okay, can you detect what is more suitable to pour a wine? And probably you as a human can very intuitively tell, okay, you know, in the first image, use a wine glass, in which you can pour.
+And in the second image, as you don't see any glass or anything, you can still see a cup, and you say, okay, this is a more appropriate, you know, thing in which you can,
+Pour the wine.
+Now, this is very intuitive and very, you know, something which is very obvious for a human.
+But when we talk about
+You know, systems which are, which are running, you know, models of machine learning, or, you know, or which are based on robotics, they find this task very difficult.
+Okay?
+So, as a problem, what we want you to understand is, we want to design a system
+Which can basically detect an object based on the task given to it.
+Okay? So here, what we have done is, for you, we have provided, you know, a research paper, which is there on the… the link of which is provided over here.
+This, basically, research paper is talking about one such model which allows you to do object detection based on certain tasks.
+Now, all the tasks are predefined, and based on that, you will do some object detection.
+Maybe can we go to the next space, please?
+So, the problem statement, essentially, is you have to design a task-aware object selection framework.
+for doing object detection, okay? We will be using… there is this Microsoft dataset, which is called a Skoko dataset, okay? That is the dataset which is provided, which has a lot of images, which are very relevant to the kind of 14 tasks which are defined
+in the paper, which I have put in the reference book, okay?
+So what you have to do is, you have to, similar to this paper, you have to design your own solution.
+You have to design a framework that can detect objects based on the given task.
+Okay? And now you have to deploy the solution on an Edge device, which is basically a, you know, a Genesis 2
+FPGA board, okay? And the way you have to deploy this is…
+You have, you know, a Vega processor, which is from CDEC as a heart of it, which is a RISC-V-based processor, and then you can also design some accelerator which can work in tandem with the Vega processor to accelerate your pipeline or your proposed frame.
+Okay? So just to understand, the input to your system is one image, And…
+a question, or a prompt in which we are going to put some questions, okay? And the output should be that for that particular image.
+When you read this question, what is the most appropriate object that you can detect?
+Okay? So this is the overall problem statement. How we are going to judge you is, one.
+The, you know, your proposed detection pipeline, what is the novelty in that?
+Then, accuracy and relevance of the object detection based on task
+Which we have provided. Then, of course, your inference latency, that is how fast you can do this.
+Your resource utilization, what is your utilization number in terms of CPU and FPGA?
+And then, how much is your power and energy consumption? So these are the main metrics around which we are going to judge, you know, the efficiency of your proposed solution.
+But the first thing first is, you have to come up with a, you know, a pipeline that can do this task-aware object detection
+you know, solution that you can develop. And also, then, you should be able to deploy this on the Genesis 2,
+Now.
+Since this is a multi-stage problem, okay? So, in the stage one, so right now we are only discussing, discussing about the stage 1 submission part, and what you really need to do.
+During the Stage 1, which is starting from tomorrow till 10th March, you have to first familiarize yourself with the Coco dataset, and get a better understanding of what do we really mean by task-aware object detection.
+We have provided one reference work here, but you can also look for more.
+Then, you also need to, you know, get familiar with the Vega processor system, okay? We are going to provide resources and a small workshop on that as well.
+And you need to understand what is this Genesis 2 FPG about? What are the resources available on that, okay?
+And finally, you have to submit a proposal of your normal task-aware Object Detection Pipeline using the given… the template what we have provided, okay?
+And you have to basically propose what is your solution, overall solution, look like.
+what kind of models you're going to use, so you have to give us a complete block diagram of your detection pipeline.
+You have to also, you know, provide us, okay, how you're going to actually deploy this pipeline on the Genesis 2 port.
+So you can understand what are the resources available on Genesis Board. Based on that, you know, whatever is your, you know, free understanding of it, you can give some, you know, outline on that, how we are going to achieve that.
+You also have to, you know.
+right, in detail, what is your rationality? Why are you choosing these certain models or this certain pipeline to achieve this object detection? And what is your rationality behind how this is, you know, your employment… the deployment plan that you have put? You know, what is the rationality behind that as well?
+So these are the few important things that you have to put in Stage 1.
+Once you finish Stage 1 and submit your report, then we are going to shortlist the team based on your proposal, based on the feasibility of the proposal, we'll see how realistic your proposal looks like, whether it is achievable, you know, in the next few or couple of months' time or not.
+And then we'll let you know. Once we shortlist the teams, they will move to stage 2, where, you know, they will start getting into deployment, or start into building the system.
+At stage one also, if you have bandwidth, if you have a good understanding of what, you know, what is this problem statement about, we are… we will really encourage you that you please start
+running some experiment, and if you've generated some results, or maybe it's a pipeline or something on the deployment side, please share your results on the report itself. This will give us a good idea that how and who are you about this design contest, okay?
+So, I think that's all from the problem statement side. The problem statement will be shared with you. You can go through it in peace, you can ask any questions you have on this. We'll be very happy to answer that.
+Maybe, Siru, we can just, go through the template once?
+Yeah, so this is a template in which you have to submit your, you know, Stage 1 report.
+Title, author, team name.
+Like we mentioned, we prefer team to be 2 or 3, not more than that, and definitely not 1, so please, you know, make sure of that. And then make sure that, you know, you're putting your affiliation and everything.
+Here, you can see the table of content that we are asking for. One is the abstract, so in the abstract, you can basically discuss a little bit about how, you know, first of all, what is your pipeline looks like.
+And, you know, a little bit on, you know, why this… why you feel that this is a very interesting problem to solve, that kind of a thing you can put.
+An introduction, you can, you know.
+you must be… now, because after this, you have to read multiple research papers. You can look into that, and based on that, you can write some introduction on your pipeline, what you're creating, your rationality on that.
+You know, so this, if you see introduction, background research, background research, you can basically talk about whatever the research papers you have read.
+And what you conclude from them?
+Then goals and objectives are very clear. We want a task-aware object detection, so you can mention that.
+Then design process is very critical, where you have to basically, you know, put
+your flow diagrams, your, you know, proposed design ideas, all those things you can discuss in this. Now, there are many, you know, many sections which may not be relevant right now, so you don't worry about that.
+Whatever sections you can fill right now is fine. Main thing is, we should be able to clearly understand what is your proposed idea, okay? That also includes what kind of models you want to use, so you have to put the names of those models.
+You also have to discuss how you're going to… some idea on how you're going to deploy this. You may not have a complete idea, but that's okay. Whatever you can put is fine for us.
+And then, if you have done some prelim, you know, experiments, some results, some discussion would be very useful.
+So try to fill as many, you know, sections as possible.
+And, and please submit on time.
+That's totally… From my end. Thank you.
+Seru Srinivas
+Seru Srinivas
+00:26:41
+I think we have one more, slide for you.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+00:26:57
+Yeah, I think that's very, very important. Your proposal should be original. So, original meaning that, you know, you… multiple people should not be copying and submitting the same proposal, okay?
+When you talk about a pipeline, it can be inspired pipeline. There is no problem with that, okay? But then again, you know, you have to also talk about the novelty in that, okay? So, maybe you like some model, or which… there are some models which you have seen who are able to do this
+Kind of a thing. You can take those models, but then you have to also see what new thing you can add to them.
+Okay, similarly, when it comes to deployment, you know,
+the… what novelty you are bringing in the deployment part as well. So, how you are optimizing your models, or have you done any pre-processing, or whatever, those kind of information, you have to also mention that, in case you are taking some very well.
+Okay? Please, whatever figure you are using, please provide a proper reference.
+2 in the report.
+any figure, any table that you're taking, you please put a reference to it. For example, if you see, when I was discussing the problem statement, I put an image about that wine pouring thing, right? So I clearly put a reference about it from where we have taken it.
+So this is very, very important. So, you know, we are not going to entertain any kind of plagiarism, so please make sure whatever you have taken from any other reference work has been properly cited.
+You have to, you know, limit your report to 15 pages, not more than that. We don't want any unnecessary information. We want only pointed information on the work, what you are doing.
+And any communication, it has to happen through EasyChair, so I think at some point of time, we are going to create some, you know, discussion forum as well, or some WhatsApp group might be created, so you can share your questions or anything, you can directly share through EasyChair, or other forum when we announce.
+Okay, please don't try to send any personal messages or… Thank you.
+Seru Srinivas
+Seru Srinivas
+00:29:18
+Thank you, Dr. Vivek. Sorry, I was on mute. I would request, Keith now to take us through the Vega microprocessor.
+And what this, what the Vega processor is about.
+keith@cdac.in
+keith@cdac.in
+00:29:32
+Alright, thank you, sir. Am I modul?
+Upul Ekanayaka
+Upul Ekanayaka
+00:29:36
+Yes, you are.
+Seru Srinivas
+Seru Srinivas
+00:29:37
+Yes.
+keith@cdac.in
+keith@cdac.in
+00:29:38
+Yeah, so hello and good evening to all the participants.
+Yeah, first of all, I would like to thank the organizers of TVCon for giving us this opportunity again. I mean, we have been partnering with, TVCon for the last two years, I mean, providing processor, IP, and support for the design challenge.
+And, DVCon is being growing, significantly, and, a lot of good response as well this year as well.
+And, so we are happy to continue our association with dbicorn.
+So, let's, I will be just, in this session, briefly, maybe we can move to the next slide, maybe.
+Right, so overall, the agenda, I mean, for this session would be a brief introduction to CDAC, about CDAC, for those who are not familiar what CDAC is and what CDAC does, and then I'll be talking about the DHL India RSY program, which is of relevance or significance to this activity.
+And, an overview of, the process of… the family of processors which we have developed.
+And, this,
+slide seems to be, I think, there's a mistake. It used to be, actually, we had processor.
+Is this the old slide, or…
+the updated wire.
+Upul Ekanayaka
+Upul Ekanayaka
+00:31:03
+something, just in the agenda.
+Seru Srinivas
+Seru Srinivas
+00:31:05
+The… yeah, here it was not updated. It is…
+keith@cdac.in
+keith@cdac.in
+00:31:09
+Okay, maybe. Okay, so that, we'll be discussing, maybe little details on the processor, which we would be offering, and the association which we're offering for the contest, and then also how you would, again, have access to the FPG and the other resources, so that's the overall agenda. Next slide, please.
+So, just a quick, thing about CDAC. CDAC,
+as some of you may know, Center for Development of Advanced Computing is one of the premier organizations under the Ministry of Electronics and Information Technology. It's an autonomous society under MIT, and working in areas related to R&D, in electronics, as well as IT.
+So, CDAC, as you may be knowing, was established as a national initiative for development of supercomputers. This was in response to the denial of the technology import, actually, and as you may be knowing, and later on, CDAC has evolved since then.
+And it has been merged also with multiple other centers under MIT. And right now, maybe we can go to the next slide.
+Right now, we have around,
+Yeah, one more place. I think around, 12,
+I think you'll have to click on the database. So, 12, I mean, we have a presence around 12 locations in India, and those numbers you see in the brackets are actually the offices. We have multiple offices in certain locations, like
+Also, we have one at Belamb, one at, Tekuno Park. So, Sri Lank is,
+spread all over, the country in different parts. And… next slide, please. The areas, I'll just quickly go through them. I mean, as you know, we already mentioned supercomputers, so the high performance,
+Computing is,
+One of it, the main core area, which, CDAC originally was formed with, and you must have heard of the Param series of supercomputer, and then now we have into development of the, indigenous servers as well, called the Ruther Servers. And, CDAC is also having a strategic partnership with, NVIDIA.
+So, advancing research in this area.
+And, strategic electronics is another key area where we work and, to strengthen, basically, the national security and also enhancing our defense, sectors in aerospace, military, industry.
+We have many, I mean, we have done many projects, like, for agencies like ISRO, DRDO, Navy, Indian Army, etc. And, multilingual is another area which CDAC has been a pioneer in this, field, especially in natural language processing, as well as multilingual processing. There was a program by TDL called TDIL by MITI itself, 20 years back, and…
+it started with, where we had this… nowadays, it's a common thing you have in your systems, Windows, UNS, you have your multilingual keyboard access. Actually, the Inscript keyboard, which was
+developed by CDAC, which is group, Wave, then that is the same thing which has been now adopted by Microsoft, and which you have in your Windows, so that is one other area, and then multilingual, now we are also working into, like, say, local language, text-to-speech, speech recognition, and other mission translation, I mean, language, language-to-language, and that, so that is one other area.
+Software technology is, of course, there are a lot of, activities happening. Forces mentioned that, that's because we have also, operating system called the Barada Operating System and, Service and Systems, actually both, which is developed by CDAC.
+And then there are a lot of softwares on the ERP, HRM side, Service Desk, then ICT as well as. And also, on the technical, like, system side, we have a virtualizing HCI solution called Virtue, and other cloud-based solutions.
+Cybersecurity forensics is another key, what do you call, mainstream machine of, CDAC, especially the Hyderabad Center and Tuandrum Center. So, that's into cyber, I mean, forensics of networks, digital, I mean, disk forensics, digital evidence, and there are a lot of,
+partnership with various law enforcement agencies of the country, and also threat management and other things, SEAM and network, diagnostics, and…
+Quantum computing is another area where CDAC is now working, quantum as well as AI is another new area with CDAC is also, and CDAC is, in fact, spearheading the
+QC program in India, and we have already started work, and then you may… must have seen, there is a QSIM toolkit, which is a quantum simulator which has been developed by CDAC.
+A is another area which, the brain-mission interface, like, multimodal neuro, neurophysiological frameworks and other things have been already developed, and the work is, active… happening in that area.
+Professional electronics covers a lot of systems in electronics, which comes from spanning control systems, industrial automation, communication, power electronics, and also VLSA embedded, so that is where
+Our work is mainly involved in VLSA and embedded, systems, so the chip design, as well as embedded systems design, so all comes under the Power Electronics, Professional Electronics,
+category, and health informatics is another thing where CDAC has been working. Telemedicine, for example, eSange evening is something which all of you may be knowing, it's popular too, because during the COVID time also, it is the telemedicine system and the mobile telemedicine system, and then medical informatics, SDK is there. MRI is something which India is now indigenousing, you must have heard the PM talking about it.
+And, CDAC is involved, as well as with other, agencies, and, cancer detection, service scan, these are all other things which CDAC is working in. We have done our own hearing aid, also in this development.
+Which is done from our center itself.
+our group, and…
+Education and training, I think, ZDAC is renowned for, and most of you may be knowing ZDAC as a training center, if, at least because, they have a lot of courses happening, both short-term as well as long-term, like diploma or also PGDCA courses, and, even some short-term certificate courses.
+And ZDAC has also got some platforms, like, for the e-learning, like the Lakeshark and other things. So, this is basically an overall of what CDAC does and the areas which you're working in. So, next slide, please.
+Yeah, I would be focusing on, two things. One is this program, which is called the Digital India Respi program. It started off as the microdeprocessor Development Program, which was initiated by the Ministry of Information and Electronics and Information Technology Government of India.
+It is, aimed at, achieving self-reliance, and we call it… and,
+indigenous processor, technology, and, so that was the aim where this was initiated. And, RISFAI, as you know, has been, very popular in now, in a lot of countries, and in a lot of…
+members, I'll be coming on the next slide. So, I've also… so, India government has also taken a decision and adopted, RISPY as the ISA for the Indigenous Processor Development, and that's why the Data India RIS program was born in, so…
+Yeah, next please.
+So, the aim and goal of, the program is, and our mission is actually, as I mentioned, to be self-reliance in microproso development, and,
+related, areas. So… so we have a mandate, and we have been, developing a series of, indigenous processors, right from, microcontroller class 32, to, to,
+high-performance, 64-bit, super scalar processor, which, will be coming in the next slide, so… so that is a series of, based… all based on Respi ISA. Then, also a development of, other reusable IPs. So for peripheral IPs, like, apart from the processor, you have various, systems, as well as peripheral IPs, like the USB, the net, and audio source, peripherals.
+like I2C, SPI, UAT, and all that. So we have developed a lot of other peripherals as well. And we set up a resource center where we have the infrastructure for the… of the EDA tools and the FPGA platforms, boards, as well as the emulation platform for, for this development, as well as a fast rapid prototyping and testing as well.
+So, and
+The ecosystem is not only on the processor, when you say a new technology and a new processor development, or a new architecture, you also have the full ecosystem in place, so it also involves the boards, the board support packages, drivers for the various peripherals, and then also the toolchain, the idea and the toolchain for where people can start working and using these processors for developing
+Their own products or applications, so that is,
+part of it, and I aim at this, juncture and this mission, the project which started, is to finally develop a quad-core 2GHz quad-core SoC, and, now we are working into that.
+Yeah, next slide.
+Please, yeah. So, as I mentioned, so, I think this was already taken, you have gone previous, maybe.
+Okay, so something about the RISC-V, if, we are not familiar with. So, RISC-V is… yeah, there's, there's reduced instruction, set, I mean, as you know, the,
+This was developed by, the University of California, Berkeley, and
+it's a free ISA, which is open, and also it is now… now it's being maintained, and the standard is being maintained by the RISPY International.
+And it is, like, very… it's gained a lot of popularity in the… especially in the embedded, domain, and, so we are also following that, architecture, and, it's, I think around all of…
+About, 4,500 plus,
+companies, or partners are countries… I mean, partners are there already, there is 5, consortium, and MIT is also a part of it. And, so this is based on the reduced instruction set principles. As you know, the RIS-5.
+And,
+So, this is, provided under the open source license, and you don't have to, I mean, pay any fee for that to use it, unlike the proprietary processor IPs which you get from commercial vendors like ARM and MIPS, you don't have to pay those huge royalties, and
+So…
+It is mainly, it's the ISA, and so you are free to develop your own implementation of the microarchitecture, and make your design your own processor over SOC for, real-time applications, and, like, companies like Qualcomm or MediaTek, or things are, just using the RISPI ISA.
+You can develop your own, and this is what we have been…
+Doing for the past few years.
+So, 5 stands, actually, for the 5th generation, because, I mean, the SPI, the University of Berkeley has been into this from many years back, and the 5 is the 5th generation of the SPI architecture ISA, which they have now standardized.
+Okay, please, next, please, yeah. Thank you. So, this is a brief,
+overview of the family of processors which we have developed. We have named them Vega, and in the Vega series, you have right from a 32-bit microcontroller class, which you see the first one, called ET1031. It's a single-core, single-core,
+32-bit microcontroller class, 2. The… the last one, which is a 64-bit
+cloud-core out-of-order superscaler high-performance, core. We have about, 6 variants, which are already ready available, and also many few other
+more. I mean, so, this…
+And, including the thing, actually, it's, the cord core is India's first, indigenously developed, cord core out of order, actually.
+And, these are all based on, the RISPY ISA, and we have our own microarchitecture, which is, again, based on the Harvard architecture, you can call, and,
+Risky, as you know, is modular in design, and the configuration, you can have multiple configurations for the ISA as well. There are standard extensions.
+which are there, some of it is mandatory, like, you have the… either the RB32, i, or the RB64I, which is mandatory, which is the… which, denotes the… and which, for the base integer operations.
+And I denotes that, and similar, you can see the, IM stands… M stands for the… it's the extension for the, multiplication and, division operations, and…
+If you… and so the first one is, basically, as I mentioned, it's the, microcontroller class, which does not have, the MMU and other, and it can be used for
+embedded applications where you do not require Linux, it do not support Linux, and for small sort of embedded applications where you run bare metal applications, so free RTOs, that can be used. And then there is a variant which we have brought out later on.
+it is, the AT1051, which is, again, a 32-bit single-core, and… but there you have, the, support for the floating-point F stands, I mean, for
+the single precision, floating point, and, D is actually a double precision, which we have in the other variants. So, and C is for the compressed instruction,
+So, you have an MMU also in support in that, so you can run some rich operating systems, like, or complex operating systems, like Linux. It's got a 5-stage, and that's also in order.
+And then, AS1061 is the 64-bit single-core implementation, with the RB64Y, M, A, F, D, and C. As I mentioned, it also includes the floating-point single position, as well as double precision,
+Support, as well as the compressed instructions, and that is having a six-stage pipeline.
+I'll be coming to more details about this in the next slide. So this is also an in-order code. And then we have, the high performance, superscalar variance, which in, it is…
+AS1161 is the single core, and which we have in dual-core as well as quad-core variants. So, these are the high-performance, superscalar…
+Processors targeted for more complex and more high-computing applications.
+Next, please.
+So, yeah, there was a mistake in the initial, this is the correct one. So, some more details. So, this is the core which we are offering for the contest this year. So, last year, it was the 32-bit which was used, and this year, we, are making available the 64-bit AS1061.
+Which I mentioned is, the 64-bit, in-order core instruction set, comprises of IMA, and FDC. So, 6-order, six-stage in-order.
+pipeline implementation, as I mentioned.
+And it's got a big, it supports a mix of 16-bit as well as 32-bit instructions, so that you can have a better core density, and
+So, this has also got a MMU, advanced, and also, I mean, the capabilities,
+where it is, actually, you, I mean, it secures your physical memory by translating, actually, the virtual address into physical addresses, and also ensures the access, permissions. RISFI has also got its own, physical, memory, protection, which is called the PMP, and, which restricts physical memory access.
+And then we have the, advanced, branch predictor mechanisms.
+which are crucial in nowadays, actually, in this modern pipeline CPUs here, that these are… the key components here have the branch target buffer, the branch history table, and the return network stack.
+Combined together, all this together, function, combinedly, they, I mean, help to minimize or prevent the pipeline stalls, which helps increase… improve the performance significantly, very significantly. And then we have 8KB of L1 iCache, as well as DC. As I mentioned, it is separate IND caches.
+And, this also supports, the open on-chip, a debugger.
+Which is a widely used open source software tool for debugging, and it forms the bridge, actually, between the
+What do you call your software running, or the host debugger, and your…
+host debugging software, or maybe, like, something like GDB and, and also… and, with your target embedded hardware, on-chip, so that forms the bridge between them. And then the standard IXE, AXI, if you know, the Advanced Extensible Interface Protocol.
+It's with, which is from the AMBA, within the AMBA specification. It's an open standard, and it's a platform-independent open standard, which is, high performance,
+synchronized on-chip communication, which is used for managing your data between the IPs and the functional blocks in your SOC, so…
+That is between the memory, between, the,
+peripherals and on so. So this is… so we have the standard AXI interface, AXE4 available. So these are the key features of the processor which we'll be providing.
+Yeah.
+Next, please.
+So, this is, the overview of the SOC, which you would be getting, apart from… so that would include, as you can see in the green block, the processor which I mentioned, AS1061, and then, the DDR controller, which… and you have support for 1GB of DDR RAM, then the Ethernet controller, and then
+the internet controller, boot ROM, and
+Then your other peripheral of speed you have. See, as I mentioned, so the AXI4 bus is the interconnect, between this, processor and the other peripherals, as well as the memory, and I think so the AIM,
+The APB is used for the low speed, the peripherals, UART, SPA, I2C, GPU, and timer. And,
+Yeah, next slide, please.
+So, this is where, you, as professor mentioned, so whatever the algorithms which you would be, designing or using for your, that is, for solving the.
+the problem given to you, that hardware accelerator IP would have to be interfaced, to this XC bus, which is provided in this
+SOC, and
+you can choose what part of the acceleration, or which model, I mean, which part of it you can, I mean, try to accelerate to using the hardware, and that's left to you, your design, and your… the, what do you call it, the innovation, or the innovation, or whatever. And finally, it would be evaluated directly on the results, on the performance, like, so how… how much
+It speeds up your execution and how fast your application is running using the hardware acceleration as well.
+So…
+I think, yeah, that's it. So this is the board, as, we mentioned earlier, Professor has mentioned. It is the, Genesis 2 board from Digilent, that would be provided for the final, stage of implementation, where you get to run it to have the actual hardware. And, so that, that comprises of, Kindex 7, FPGA from AMD.
+And, so, this is where the SOC and the hardware staff would be running, based on implementation.
+So, Bivado, tool will be provided, I think maybe some of you already have access you can use. At the final stages, you'll be getting access to their tools to run this and implement it on the board.
+Yes, Mr.
+Yeah, so remote access would be provided, as I mentioned, towards the last stage, so you would get access through any of the common remote desktop applications, like, say, TeamViewer or Unidesk, or some sort of a mechanism, where you would get some time slots where you, for each team, would be given specific time slots.
+Where you can, log and do, and,
+do your synthesis and implementation on, and then download to the board, and find… and also run your real application. The toolchain will also be, installed and provided, Linux, where you can run your…
+Application and verify the results.
+So, yeah, this is what I mentioned. So, you'll be given provided remote access, through internet, you'll be given some account where you can… and also some time slots where, it could be shared among the different participants, so where you can run and, carry out your
+development activities.
+So, yeah, that's it. This is some of the references for, where you can get something, I mean, get to know more about the Genesis board, as well as, the processors, details about the AS1061.
+And, maybe, and yeah, we also have… next slide, maybe.
+Yeah, we also have… these are some of the other channels where you may get into… get in touch with us, so maybe get some more details. I mean, your processor website is there, Vega Processors, and then we have a YouTube channel where we have a lot of tutorial videos, as well as some…
+videos shared by others, startups as well, others, where they have done… where they have interfaced, multiple interfaces and also. And, we have also a discussion forum, we have a blog, I don't think it's mentioned yet, so there are different ways, and as Professor and, Serot also mentioned.
+We will also be having a forum, we'll be having a WhatsApp group where you can post your queries and, get in, thing, and where you can get some information, and we'll be having some sessions
+for follow-up sessions. This is just a basic overview for the first stage, for where you need to propose, I mean, submit your proposal, and the idea, and how you're going… and what you're planning to do. So, later going on… going forward, we'll be having multiple sessions where we will go into more deep technical lesson on how the implementation part
+And, the things can be done. So, these are some channels which you can reach out to get some more information about Vega processors and, the other associated, technology.
+Right, thank you. I think, I hand it over to Siro. Maybe we can, take the questionnaire… yeah, questions…
+Seru Srinivas
+Seru Srinivas
+00:55:20
+Yeah, thank you.
+keith@cdac.in
+keith@cdac.in
+00:55:25
+I hate…
+Upul Ekanayaka
+Upul Ekanayaka
+00:55:27
+Yeah.
+So, thank you, Keith. Saru, I think we can go for the Q&A, right?
+Seru Srinivas
+Seru Srinivas
+00:55:36
+Yes.
+Upul Ekanayaka
+Upul Ekanayaka
+00:55:36
+question and answers have been already received, and I should thank… Professor Vivek has been answering many questions already. So, we'll pick some unanswered questions. I think a few of them had the question about, like, how can they
+specifically contact us through the EC chair.
+Seru Srinivas
+Seru Srinivas
+00:56:00
+So, we will share an email ID to which you can send your questions.
+Upul Ekanayaka
+Upul Ekanayaka
+00:56:04
+Right, so there'll be an email earlier, so you send an email to that one, all of the mentors will receive that. So, at least one of the mentors, will reply back to you.
+Right.
+And then, we were…
+Yeah, so will there, there is another question saying, will there be a separate problem statement for each domain? The answer is basically no.
+I mean, basically, we will have only a single problem statement, this time for everyone.
+Right, Professor Vivek, any idea about that one?
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+00:56:49
+Yeah, it's a single problem statement, but you see, the problem statement itself is very complex. So, you have to design a system which is going to detect, based on the questions or the
+you know, what we are going to ask. So, it's not a very simple problem statement. And there are many metrics based on which we are going to judge you.
+So, there is no problem in terms of how we are going to evaluate, okay?
+Upul Ekanayaka
+Upul Ekanayaka
+00:57:17
+Alright.
+Yeah.
+So, yeah, the ECHAS, submission, like, portal has been, disabled for now, because otherwise,
+there'll be additional submission, etc. So it is, sort of disabled for now, because this is… what we expect from you has already been obtained, I think. So, if there are any changes that we need from specific teams, we'll contact you.
+I think, Professor Vick has already answered that the, bona fide certificate upload deadline is, not soon, so you can
+You can upload it later on as well. The deadline is April 30th, so you have time.
+To prepare for that one.
+Yeah.
+Seru Srinivas
+Seru Srinivas
+00:58:09
+Yeah, in case if you have further edits, I can open it for edit only.
+Right.
+Upul Ekanayaka
+Upul Ekanayaka
+00:58:19
+Then there is a question what exactly we should,
+submitting the Stage 1, you need, I think, Professor Vick has already explained that one, you need to go through the report template, and then…
+Your… basically, it's your design idea. So we have pro… you have been provided with the problem statement.
+And then, basically, you need to analyze that one, and…
+We don't expect you to implement anything per se, but if you… if the time permits, you can do some preliminary implementation and testing, but basically, what we expect is your idea.
+about the problem. So how, how your… your proposal about how to resolve the problem, to gain the best, performance. The problem, AI-related problem itself is one thing, and then how you are going to implement it in this, risk-by.
+Vega across the platform with an accelerator so that, it will have a better performance in the inference run.
+And…
+Yeah.
+Weightage distribution of functionality versus optimization. Will flexible, scalable designs?
+Given more priority over hard-coded, faster ones.
+Not sure about the question.
+Seru Srinivas
+Seru Srinivas
+00:59:53
+Dr. Vivek.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+00:59:54
+Would you like to answer this? That is very circumstantial. We'll see when you start.
+Upul Ekanayaka
+Upul Ekanayaka
+00:59:59
+Yeah.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:00:00
+This is not something we can answer now.
+Upul Ekanayaka
+Upul Ekanayaka
+01:00:02
+Right.
+So the, there is, there are several questions about the Stage 1, deadline extension.
+for now, it'll be 10th of March, depending on the total number of submissions, etc, and more requests we might consider, but for now, I think it'll be kind of a hard deadline for
+March 10th, so please, Work on the next couple of weeks.
+Or a little more than that, I think you have.
+To, for now, prepare for the 10th, 10th of March deadline.
+Do not assume for any extension for now.
+How many teams will be selected for the final stage? I think.
+Seru Srinivas
+Seru Srinivas
+01:00:52
+6… 16…
+Upul Ekanayaka
+Upul Ekanayaka
+01:00:53
+Yeah, sweetener.
+Seru Srinivas
+Seru Srinivas
+01:00:54
+be selected.
+Upul Ekanayaka
+Upul Ekanayaka
+01:00:54
+It'll be 6 teams, yeah.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:01:01
+But that is the third stage.
+Upul Ekanayaka
+Upul Ekanayaka
+01:01:04
+That's students.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:01:04
+1, then stage 2, then stage 3A, Stage 3B. So 3B, we are going to select 16, but before that, you know, can't tell you the number.
+Upul Ekanayaka
+Upul Ekanayaka
+01:01:14
+Yeah, so for the, for the subsequent next stages, there is no specific decision on, how many teams, will be selected. It'll be just for the, final one, final
+shortlisting, you will have, we will have 6 teams, but before that, for the stage 1, stage 2, there'll be a different number of teams based on your
+Proposals and qualification level.
+Seru Srinivas
+Seru Srinivas
+01:01:44
+And the… and the final… the six teams will have an opportunity to,
+come to the, come to DVCon, do your, trial on the board directly.
+That is, initially you will be connected to the board through, remote access, but, probably, by the end of August, we will, we would have selected 6 teams, and these 6 teams will get an opportunity to come in person.
+to Bangalore, and work on these boards.
+We will share all those details later.
+Upul Ekanayaka
+Upul Ekanayaka
+01:02:27
+So that's another question about where can I, learn about the processor from basic to advanced, so you will be…
+share with the necessary documentation about the Vega processes, like, whatever the necessary things that you need to know, for this particular, design contest challenge, for the implementation, etc, you will be shared, you will be shared with, necessary documentation.
+With, with, sub, with…
+Read some emails, you can, please…
+keep an eye on the email. You will receive several emails. I think, also you have asked about the presentations, recording, everything will be shared with you, in the upcoming days.
+Bona fide certificate, I think, you have time until, April 30th, so it… it is not that Chody has to send us… send us, right? It's, your responsibility to collect it and
+sent… sent us, by April 30th, is that…
+Correct, sir?
+Seru Srinivas
+Seru Srinivas
+01:03:31
+And there will be a field in EasyChair where you need to upload it.
+Upul Ekanayaka
+Upul Ekanayaka
+01:03:35
+That's right, yeah.
+Okay.
+So don't worry too much about that one for now.
+So that'll be, an upcoming task, so focus on the…
+Stage 1 submission for now, so once you are selected, probably you can submit it later.
+Yes, you will, you will receive an email with all these required documents, including the presentation, problem statement, and about Vega process, etc.
+And you have.
+Seru Srinivas
+Seru Srinivas
+01:04:15
+One more, one more thing, yes, it will be shared to every team member.
+Upul Ekanayaka
+Upul Ekanayaka
+01:04:19
+Everyone, yeah, everyone, not just for the leader, yeah, everyone.
+Yeah, for now, the portal will be the… the email alias, which will be… we will share with you.
+So that you can contact through ECGR, maybe in the future, but, we might have some WhatsApp group groups, etc. But for now, I think it'll be the email alias, because,
+we have so many teams, I'm not sure whether it'll be easy to handle with the single WhatsApp group. So for now, we will go ahead with,
+the email.
+Seru Srinivas
+Seru Srinivas
+01:05:02
+Yes, Q&A part will also be there in the recording.
+Upul Ekanayaka
+Upul Ekanayaka
+01:05:05
+Recording, yep.
+This one we already answered, yeah, percentage.
+Yeah, I think, in the…
+In the slide set, we have clearly mentioned which processor which you are going to use. Probably you might have asked this question before that explanation.
+Yeah, this is the exact process.
+Seru Srinivas
+Seru Srinivas
+01:05:34
+Right here.
+Upul Ekanayaka
+Upul Ekanayaka
+01:05:34
+Yeah, you're going to use, yeah.
+And then for, like, in the next slide, I think there are specific details about the process as well. If you go to the Vega website, you will find more details, and then we will share specific documentation about this process as well.
+how much AIML knowledge? So, you need to have just adequate, knowledge to, tackle this problem statement.
+That's it.
+If you can…
+complete the application, because that is the first task, basically. I mean, you need to understand the AI application provided, then you should be able to
+understand it and compile it, and run it, and then the rest of it is to implement it with performance-efficient manner in the, risk-by-based.
+Actual rate assistance.
+That's a tricky question. I don't know about machine learning. Still, can I take up this task?
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:06:54
+No, I think…
+Upul Ekanayaka
+Upul Ekanayaka
+01:06:55
+So for this?
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:06:56
+I think,
+In a team, you should have at least one person who has some idea about machine learning, otherwise it's going to be very difficult.
+Upul Ekanayaka
+Upul Ekanayaka
+01:07:04
+That's right.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:07:05
+So I would… even from the hardware implementation point of view, if your team member has some idea, has some, you know, previous experience with FPG, then it would be very useful.
+Seru Srinivas
+Seru Srinivas
+01:07:19
+So probably, we will talk about last year's participants. All of them, didn't know even Verilog. They all learned and completed the design contest.
+And, the winners also. So, I think you should be able to do it.
+Upul Ekanayaka
+Upul Ekanayaka
+01:07:37
+Yeah. Basically, I mean, the bottom line is that you need to have this knowledge, both
+AI and ML knowledge, as well as, Verilog-based hardware implementation knowledge.
+But of course, it's up to you whether you learn it for some time, and…
+Do the task, or if you have prior knowledge, that'll be easier for you.
+So there is another question, what, what extent of the, what extent is the complexity of the algorithm is expected?
+So, the elaboration is, like.
+Can we have a reference so that we can… we don't make proposals which is impossible to do in the given timeline?
+He's, basically, yeah, proxyVec, yeah.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:08:34
+I'm just saying, you can read the reference paper, and you'll find similar lot of stuff all, you know, online. If you go to scholar.google or somewhere else.
+Upul Ekanayaka
+Upul Ekanayaka
+01:08:44
+And from there, you can take some inspiration.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:08:47
+That will give you an idea of what is feasible, what is not.
+Upul Ekanayaka
+Upul Ekanayaka
+01:08:51
+That's… that is right. So, it's… it's one of the things that you have to decide. It's, like, one of the evaluation criteria, so you need to come up with your own proposal, where it has to be… where it doesn't just not…
+has to be functionally correct, but it has to be feasible enough to implement in a risk-by-based system. So, risk-by-based accelerator system is a resource
+constraint, systems, or you should… it's like, edge computing. You should target for, sort of, edge computing type of,
+Implementation, so that is also part of the… part of the…
+Decisions that you need to make, kind of, like, tricky decisions that you need to make.
+Yeah, so the other question is, should we more focus on system architecture clarity or algorithm
+McNavelty, in Stage 1 proposal.
+Prosevere, Kenny?
+Thing that you need to address?
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:09:55
+I'm sorry, could you please resume?
+Upul Ekanayaka
+Upul Ekanayaka
+01:09:56
+Yeah, the question is, whether they should more focus on system architecture clarity or algorithmic novelty in the Stage 1 proposal.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:10:08
+I think a little bit of both is required.
+But, I would say stage one, if you can have the algorithm well understood, that would be very useful, because then you know that what exactly you're trying to implement, okay? So if you… if you can, you know, clearly make your pipeline working, then that would be very useful.
+Upul Ekanayaka
+Upul Ekanayaka
+01:10:30
+Right.
+so… The next question is, like, in the Stage 1,
+whether we need to submit the proposal with an idea in detailed manner, then you will get to implement… get the tools to implement it. Basically, we will have multiple stages.
+Yes, the first…
+in the first, stage one, by 10th March deadline is for you to send us a proposal. We don't expect any implementation or anything. It's just the proposal.
+Then we'll have multiple stages, actually, so there'll be a different set of stages. Once you are selected to the stage two, based on your proposal, so we'll look, look for feasibility and so many other factors, as mentioned by you.
+So once you are selected, then you will get the chance to implement your own accelerator design. I think that will be the next particular task. For that one, also, you can most probably use your own tools to implement and test it, because one side is the machine learning task.
+Other side is the accelerator implementation task, likewise.
+And then, at the latter stages, when it comes to implement and deploy it in the FPG, of course, you will get the access to tools there, if you do not have any license or… licenses, so…
+anything like that. Then, definitely, for the advanced set of tools, like Vivado with license to do the final implementation, you will get the access, but that will be in the very latter stages.
+To run the simulation tools, which operating system is good, the Windows or Linux?
+I think, shouldn't be a problem, right? Keith, or the team, or Professor CVX, they can use any…
+Of, any system on… from their side.
+keith@cdac.in
+keith@cdac.in
+01:12:35
+Yes, yes.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:12:36
+Yes, yes, no problem.
+keith@cdac.in
+keith@cdac.in
+01:12:37
+Windows and Lex, both it should support here.
+Upul Ekanayaka
+Upul Ekanayaka
+01:12:39
+Yeah, we will… we will provide necessary information. Even for the latter stages, we will provide necessary information for both Windows and Linux, so don't worry about that one.
+Yeah, so actually the, the, our platforms, basically the implementation platforms, which you will have to access, will be in Linux, so you need to have, at least basic knowledge in Linux to handle it in the later stages, but from your side, you can use either of the operating systems.
+So you say you have experience in saidboard, and how will it be transitioned into the Genesis 2? I don't think there is anything specific
+to the FPGA platform is needed for now, because you can learn about the FPGA resources, because if you know about working with one FPGA board, and then know the fundamentals, it's just about… just a matter of deployment, right? Keith, any… any idea about this one? I don't think this will be an issue, right?
+keith@cdac.in
+keith@cdac.in
+01:13:40
+Yes, as you mentioned, right now they don't have to worry about it, but, we would be providing, actually, the net list for this particular FPG, actually, what we had mentioned, so the Genesis board. So, but, if they… and they would be given access to that as well, so later stage.
+Initially, maybe, I don't know, because that is only in the final stage, right? So they don't have to worry about it now, I think, right?
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:14:04
+Yeah, but if you have experience with Zipboard, it will be very easy for you. I mean, it will be convenient for you.
+Because you already understand the fundamentals.
+Upul Ekanayaka
+Upul Ekanayaka
+01:14:12
+Alright.
+Right. Exactly what the next question, but… so…
+Genesis, yeah, I think, what you're trying to ask is sort of a good question. The Genesis board itself doesn't have any Vegapros per se, but what you will get is…
+I, you will get a Vega processor implementation as an encrypted IP.
+where you can integrate, so there'll be a SOC, with Vega processor. There, you will be able to
+Implement a separate,
+accelerator module and integrate it with it. We will provide the… provide the necessary, technical details about how you can integrate it, etc, will be provided, so you don't have to worry about that one. Vegaprocessor part will be, provided to you as an encrypted IP.
+Of course, what you will need to understand is the environment and how… the interfaces, etc, and the specific thing that you need to worry about in the implementation is just your accelerator, and then the interface, how to interface it. Rest of it will be there as a stable,
+Already implemented, design.
+So, you, you have to worry about your application, as well as the accelerator and the… and the interface with the… with the SOC.
+There is another question I'm exactly not sure, but we probably can take a look at this. Weightage distribution of functionality versus optimization.
+Will flexible, scalable designs give more priority over hard-coded, faster ones?
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:16:14
+And that is something we have not, you know.
+Not sure yet. We'll see how your design looks like. Based on that, only we can decide.
+Upul Ekanayaka
+Upul Ekanayaka
+01:16:26
+Yep.
+So, I think the next question already asked, we will get a soft… you'll get a soft IT and associate everything.
+Yeah, exactly. It's totally up to you.
+I mean, basically, basic thing is to run your own machine learning application in the RISC-V code, like, the RISC-V CPU itself.
+That is the minimum requirement, and then…
+Which part that you need to…
+offload to the accelerator is completely up to you. There is no specific restriction about it.
+Basic, idea is you…
+accelerate, the best part of, your, like, I mean, the computationally expensive part.
+In the accelerator, and get the… get the performance better than everyone else, because every one of you are going to implement a similar… similar problem, similar model, and then, with that, how you can…
+Stay above the others would be…
+How… how you're going to…
+For, like, how we are going to decide your…
+part of your model or the design into the accelerator. So, you need to design it on your own. There is no specific restriction about that. So, minimum is where you have to run your application on the provided CPU. That's the minimum.
+I think the evaluation criteria, basically evaluation criteria is for the Stage 1 will be based on your proposal. We will look at the
+The, novelty of your approach, etc, and then the, like, point, like, to, Basically.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:18:36
+So, it's more about… we are just going to see, you know, how feasible your solution looks like, okay? Whether it is something which is renewable in another couple of
+Montane.
+And, what is… what are the other things that you provide here, right? What research have you done? What have you read? Have you done any… some… any experiments to support? Anything on that line would help us to identify.
+You know, which team we want to select the next one.
+Upul Ekanayaka
+Upul Ekanayaka
+01:19:13
+How does our selected domain affect our proposal… proposed model?
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:19:21
+There is no domain, so we have given you the dataset already.
+See, please understand, the data set is already provided.
+Any, you know, a reference model, how, you know, this task can be done is already provided in the reference paper.
+What are the different tasks based on which we are going to judge is also fixed, which is provided in the reference paper.
+So there is nothing about domain here, okay? You just… you just have to…
+Go through that paper, understand what it is trying to do. You have to understand what is the data set, what has been provided in the data set, and then work on your pipeline, which can do the detection based on the questionnaires… questions, which 14 type of questions which is provided.
+Okay? So there is, nothing about domain here.
+Upul Ekanayaka
+Upul Ekanayaka
+01:20:11
+What tools required for the contest? I… I think for the Stage 1, you don't need, any tools per se, but, for the subsequent,
+Stages, even, like, for the initial stages, even a free simulator would be good enough to
+or simulate your system, but for the next stages, you will need the Vivado to simulate the
+entire system associated with the… with the Vega… Vega associate, basically. On the… on the hardware implementation side, I think,
+For the machine learning application side, processive, they will just need basic, machine learning
+I mean, they will just need basic,
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:20:58
+Probably you can use COLAB, and if you have a G2, that would be great.
+Upul Ekanayaka
+Upul Ekanayaka
+01:21:02
+Yeah.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:21:03
+Mmm.
+Yeah, I think you have to first figure out what you're trying to do, then, you know.
+It would be then easier to identify, you know, the proper tools for your case, whatever you need.
+Upul Ekanayaka
+Upul Ekanayaka
+01:21:19
+And the next question is, like, Yeah, proceed.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:21:23
+I'm saying, Dr. Bivas, do you want to add anything on the problem statement to…
+Bibhas Ghoshal
+Bibhas Ghoshal
+01:21:27
+Although I'm ordering it?
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:21:35
+You are audible, but there is some background noise.
+Bibhas Ghoshal
+Bibhas Ghoshal
+01:21:37
+Okay, okay, okay. So that is the reason why I more or less just covered by the movement. Much to add to that. I said that, you just need to have a basic idea of the problem. What other things that need to be done to create the value?
+So, what we'll do is, I think, you know, you can go to the problem statement.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:22:07
+Maybe next week, sometime, we can have one more session.
+Or maybe, I think you can first share your queries after reading all the material, okay? If we find that there is some, you know, concern which is common for all of you, after reading everything, then we'll, you know, conduct or try to answer those queries.
+you know, either through EasyChair, or if we feel that there's a need for, you know, this similar kind of a session, we'll do that.
+But the first request is please go through the material, read it, try to understand what we are trying to ask you.
+And then, you know, we can discuss it further.
+Upul Ekanayaka
+Upul Ekanayaka
+01:22:47
+Right.
+Phase 1 implementation, can be implemented in a sync SOCFPG and show the real-time output? Yeah, for Phase 1, even though we do not expect an implementation.
+It doesn't matter, like, you can… if you have any FPGs with you, you can implement, and, like, try out, and then get some preliminary results if you need. It doesn't matter.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:23:12
+That would be, like, very useful, actually. If you can do, that would be great.
+Upul Ekanayaka
+Upul Ekanayaka
+01:23:17
+That's right, yeah. So only thing is, you want to have the…
+Vega processor IP with you, but, basically you can try UO accelerator, like, whatever, anything else that you…
+can implement related to this in available resources with you, and get some results, so that'll be, like, that's something that we can consider off there.
+Is it required to be a pure RTL-based solution, or can you offload few tasks to wake up? I think in this design, I think we discussed about this one in design in the statement as well.
+So, most of the part of the model, I think you need to run it in the Vega, the CPU part itself, and then there'll be some of the
+Functions, you should be able to offload to the
+the accelerator, so it's not that you're going to implement the whole model in the FPGA. The basic run will be on the Vega processor.
+as a software program, and then you will offload some of the things to your accelerate.
+Bonafide certificate has to be for the… for all the team members, right, Saru? Bona fide certificate needs to be submitted for… Yes.
+Seru Srinivas
+Seru Srinivas
+01:24:34
+For all students, yes, all team members. You can append all three together and attach it as one single attachment.
+Upul Ekanayaka
+Upul Ekanayaka
+01:24:42
+Right.
+No, no, for, for, the next question is about the account, ECHI account for, for the, for the…
+For single team, you need just one account. For that account, all the authors, like, all the participants should be added as authors. No, only one. You, you can add your team members as, I think… To the same.
+Seru Srinivas
+Seru Srinivas
+01:25:09
+We would have already added, so all the mails, everything will, be received by all participants, all team members also.
+Upul Ekanayaka
+Upul Ekanayaka
+01:25:18
+Right.
+Okay, the next question is, I think it's asking about, like, where does the CNN fit in the, in this whole system? Is it in the Vega, or the…
+vega, or the… the… of the Genesis 4, and hybrid, so… I think.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:25:51
+I see what he knows, huh
+That's precisely what you have to design, where you want to fit which model.
+what part of a model you want to do on an accelerator, what part of a model you want to run on the CPU. First of all, whether a simple CNN is sufficient for this or not.
+Okay? So you have to first identify those things.
+Upul Ekanayaka
+Upul Ekanayaka
+01:26:17
+Oh, some of the things already be answered. There is another query regarding Stage 1 Extension, since exams are going to take over.
+for a VE.
+Okay, we'll get back to… as… I mean, for now.
+The deadline is March 10th, based on the specific quarries, and then the situation by then, we'll decide, but for now, keep it like March 10th.
+Yeah, I think, if you design it, the next question is whether it's okay to design RTL or HLS. It doesn't matter, but…
+to be implemented in the Vega ISOC in the final system, the final design files has to be in RTL, so no matter whether you design it in HLS-based methodology, you will have to
+utilize the… Generated the RTL code.
+For this one. So, it's up to you, but we recommend
+Starting from RTL, like, basically Verilog, or system analog, or what that type of HTL description itself, because then it'll be easier for you, because dealing with the generated code, at the next level would be a little harder for you. But, but, there is no restriction, I suppose.
+That's right, so is that… is there anything…
+You need to add, Keith, about that?
+Anyway, yeah, Keith is in mute, so I think that's about it.
+Alright, I think this is a very good question, Professor Vivek. So, one…
+Student is asking about the level of AI assistance, like, probably he's asking about the gen AI assistance, which could be used in report preparation.
+Is there any particular guideline, or what is the…
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:28:39
+No, it's fine, you can prepare, as long as it's not copied.
+Me too.
+Upul Ekanayaka
+Upul Ekanayaka
+01:28:43
+Right.
+Right, so the… I think the idea is… here is the reports… the content of the report should not be LLMs. It has to be yours. You can use it to, like, write it nicely, format it nicely, etc, but the content has to be yours.
+And then you can use Gen AI as an assistant to make the report nicely, so I think that should be right.
+So, and so, I say, I mentioned that it has a very good question, because do not, like, come up with, you know, like, generated very lengthy reports, because if you go beyond the specified limit, like, 15 or…
+around pages, then you will, no matter how good your design is, you will reduce the marks, because it's not just about, you come up with the solution, you need to know how to present it as a summary as well. So, make sure that you come up with the precise, like,
+a report.
+Yeah, I think other… some of the other answers, we have already discussed.
+Are we allowed to use pre-trained, cocoa weights?
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:30:06
+Yes, we've been very good news.
+Upul Ekanayaka
+Upul Ekanayaka
+01:30:12
+Yeah, we will share the materials.
+Yeah, megapro, when it is needed at the later stages, will be shared as a…
+and other necessary design files, etc, will be shared with you. I mean, Vegaprocessor itself will be shared as an encrypted IP, and then other necessary details will be shared.
+Later on.
+Verification methods, yeah. So, if you can add a,
+Yeah, this is also a good question. Verification techniques and methods needs to be in the proposal. Yeah, that would be good. Your, I think, your verification plan is also sort of an important part, which you can add as somewhere.
+Can any CNN model be used for the object detection, or there are limitations of all?
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:31:35
+In fact, you have to do your research.
+Upul Ekanayaka
+Upul Ekanayaka
+01:31:41
+Yeah, Dr. Bibwash, I think you have marked it that you would like to answer this live.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:31:47
+Yeah, please, please, please answer.
+Bibhas Ghoshal
+Bibhas Ghoshal
+01:31:54
+Yep.
+More than that?
+Yeah, hello. Yeah, Dr. Because the question is, I think that,
+Upul Ekanayaka
+Upul Ekanayaka
+01:32:04
+Can any CGN model be…
+Bibhas Ghoshal
+Bibhas Ghoshal
+01:32:06
+for object detection.
+Upul Ekanayaka
+Upul Ekanayaka
+01:32:07
+I know there are limitations.
+Bibhas Ghoshal
+Bibhas Ghoshal
+01:32:10
+to any CNN, as long as it is deployable objectivity that we're targeting. So, that's a matter of its specific dog.
+Right. So we have no restrictions on that. This, we have the same relative.
+Upul Ekanayaka
+Upul Ekanayaka
+01:32:29
+Okay, thanks. So the answer is, basically, it's up to you.
+You had to decide that.
+We won't send any AIML, I mean, basically, we will send you the references and all specific to the problem, but, not…
+no, like, we won't share any tutorials or anything to learn, for you to learn AIML, so that is up to you, basically.
+Yeah, recorded video, everything will be shared. Yeah, research paper is, is linked in the problem statement.
+Yeah, all the necessary resources will be shared in the problem statement itself.
+Sarah, there is a question saying, can team members be modified later? I don't… I think we… there should be a deadline to fix all the team members, right?
+Seru Srinivas
+Seru Srinivas
+01:33:43
+Yes, so I have, I think I answered to some of them. I have shared an email ID, EasyChair email ID. Please send a mail to that, and we'll help you with it.
+Upul Ekanayaka
+Upul Ekanayaka
+01:33:59
+There is another specific question. Is it necessary to use Cocker dataset? I think the answer is yes, right?
+Persevere?
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:34:06
+Yes, yes, yes.
+Upul Ekanayaka
+Upul Ekanayaka
+01:34:11
+There is no, like, for the preliminary,
+implementation and testing, you can use any FPGs, anything, because initially, it's a matter of simulation, right? You don't have to use any FPGs, but if you have any other FPGs, you can try implementing whatever the part that you'd like, and then get some results. It's up to you, so there is no restriction, but
+The… the final stage, you will have to implement it in the provided Genesis to FPGA board. And it'll be provided to you with remote access, and then for the finalists.
+You will get to work with it at the, the premise… on-premise, manner as well.
+Yeah, wheelchair…
+Is it relevant to analog gamic signal? Not really.
+Yeah, finally your application will run on a Linux-based system, so… The… the… the provided
+So, the RISC-V processor and SOC is capable of running Linux, so you will run your application on a, on a Linux platform.
+Then there is a question regarding the problem statement, so it, does it, like, do we need to make, prompt-based decisions?
+Yes. That'd be…
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:36:07
+Yes.
+Upul Ekanayaka
+Upul Ekanayaka
+01:36:07
+That's right.
+Councillor for the BCS.
+The most, the next question is the most of the implementation would be in the vega process, and the FPGA is mostly for building a hard accelerating the Velog HD to make the Vega process.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:36:30
+Yeah, so this is completely your design style, okay? You have to see how much resources are available with you on Genesis 2 board, right?
+And, on the Genesis 2 board, first thing, there is going to be some space occupied by the Vega IP, right? Then there is remaining space which you have to utilize. So you can decide how much you can accelerate on the FPGA, okay? The remaining part has to run on the CPU.
+Upul Ekanayaka
+Upul Ekanayaka
+01:36:57
+Yeah.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:36:58
+Your design choice, yes.
+Upul Ekanayaka
+Upul Ekanayaka
+01:37:00
+That's right. So if you have any confusion regarding this one, regarding the connection of the Vega processor, actually, the Vega processor is not
+just separately, I mean, separately implemented, in the sense, like, it will be implementing the FPG itself as a soft IP,
+So, as an IP, so you will implement your accelerator within the same environment, within the FPGA.
+The only thing is, like, you… you will be provided, with the details, like, how much of area about the Genesis 2 board will be
+occupied by the current SOC system, and then what will be the remaining
+amount of resources, available for your design. Those details will be provided. So, based on that, try to optimize your accelerator to fit into the remaining part of the FPGA resources.
+Is our object detection IP supposed to train, as well as… or is it supposed to be… supposed to do the inference only, like using wage phone?
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:38:12
+Yes, incredible.
+Just includes.
+Upul Ekanayaka
+Upul Ekanayaka
+01:38:15
+Yeah, use a pre-trained model, and we're expecting only the in-person part.
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:38:19
+You might want to train it, too, if you want to do something, but…
+On the system, we just want you to implement the inference part.
+Upul Ekanayaka
+Upul Ekanayaka
+01:38:28
+That's right. So, if you need any, like, pre-train… training or anything, that you can do it in a separate system, but in this, particular system, we expect only the interest.
+Seru Srinivas
+Seru Srinivas
+01:38:43
+I think we are on top of the hour, actually 12 minutes.
+Upul Ekanayaka
+Upul Ekanayaka
+01:38:46
+Yep.
+Seru Srinivas
+Seru Srinivas
+01:38:46
+minutes past. So if you have any further questions, please,
+Send your questions to the email ID that I have shared here. It is, or I will share it with you again.
+through a… through the EasyChair email, you can ask your questions to that.
+Upul Ekanayaka
+Upul Ekanayaka
+01:39:07
+Yeah. Okay, and… I think we have almost answered all the questions as well.
+Seru Srinivas
+Seru Srinivas
+01:39:11
+Yes, yes, yeah. And the recording will be shared with you along with the Q&A session as well, so you can go back and listen to it again. If you still have further questions, we will take it up through email.
+We will also plan to have a session with you probably sometime next week.
+In case if you have further questions, that should be okay, right?
+vivek@iitpkd.ac.in
+vivek@iitpkd.ac.in
+01:39:36
+We can see how many queries we are getting. Accordingly, we can plan. So I would just add one thing. See,
+I request you to first read the problem statement nicely, okay?
+Also, go through the reference first, and then ask her queries, okay?
+So there are no points for asking questions, okay? So only when your questions are really, you know, when you go through the paper, and when you understand, okay, there is this thing which is not clear, then you please form your queries and ask us. You'll be very happy to, you know, answer all such queries.
+Okay? But first, read the problem statement and the reference paper, so that you get a good understanding of the problem statement. Okay, that is very important.
+Okay.
+Seru Srinivas
+Seru Srinivas
+01:40:23
+Okay, thank you so much, and all the best to all of you.
+So we will, please, look out for… watch out for the mails that we will be sending. All participants will be getting emails, not only the… the…
+the person who is selected as the author, everyone will be getting the email, so please, stay tuned for that.
+Okay, thank you all. Bye-bye.
