@@ -414,9 +414,15 @@ def _evaluate_task(
             is_tp = 1 if iou >= iou_thresh else 0
             predictions.append((float(confidence), is_tp))
 
-        except Exception as e:
-            print(f"    [ERROR] image {img_id}: {type(e).__name__}: {e}")
+        except FileNotFoundError as e:
+            print(f"    [WARN] image {img_id}: file not found: {e}")
             predictions.append((0.0, 0))
+        except RuntimeError as e:
+            print(f"    [WARN] image {img_id}: runtime error: {e}")
+            predictions.append((0.0, 0))
+        except Exception as e:
+            print(f"    [ERROR] image {img_id}: unexpected: {type(e).__name__}: {e}")
+            raise   # stop on unknown errors during evaluation
 
     # Sort by descending confidence for AP computation
     predictions.sort(key=lambda x: -x[0])
@@ -457,7 +463,7 @@ def evaluate(
     -------
     results dict (also written to results/map_per_task.json)
     """
-    img_dir    = os.path.join(coco_dir, "val2014", "val2014")
+    img_dir    = os.path.join(coco_dir, "val2014")
     coco_anns  = os.path.join(coco_dir, "annotations", "instances_val2014.json")
 
     for path, label in [

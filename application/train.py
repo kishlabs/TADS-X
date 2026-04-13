@@ -220,7 +220,7 @@ def _build_roi_cache(
 
     ann_suffix = "_train.json" if split == "train" else "_test.json"
     img_subdir = "train2014" if split == "train" else "val2014"
-    img_dir = os.path.join(coco_dir, img_subdir, img_subdir)
+    img_dir = os.path.join(coco_dir, img_subdir)
 
     print(f"\n{'='*60}")
     print(f"  Building ROI feature cache  [{split}]")
@@ -295,10 +295,17 @@ def _build_roi_cache(
             try:
                 results = yolo(img_path, imgsz=imgsz, conf=yolo_conf,
                                device=device, verbose=False)
-            except Exception as e:
-                print(f"    [WARN] YOLO failed on {fname}: {e}")
+            except FileNotFoundError as e:
+                print(f"    [WARN] Image file missing: {e}")
                 task_skip += 1
                 continue
+            except RuntimeError as e:
+                print(f"    [WARN] YOLO runtime error on {fname}: {e}")
+                task_skip += 1
+                continue
+            except Exception as e:
+                print(f"    [ERROR] Unexpected failure on {fname}: {type(e).__name__}: {e}")
+                raise   # stop on unknown errors — don't silently skip
 
             result  = results[0]
             p4_feat = p4_store.get("p4")
@@ -376,10 +383,17 @@ def _build_roi_cache(
                 roi_feats = _extract_roi_features(
                     p4_feat, kept_boxes, (orig_h, orig_w), imgsz
                 )                                   # (K, 128, 7, 7)
-            except Exception as e:
-                print(f"    [WARN] ROI-Align failed on {fname}: {e}")
+            except ValueError as e:
+                print(f"    [WARN] ROI-Align value error on {fname}: {e}")
                 task_skip += 1
                 continue
+            except RuntimeError as e:
+                print(f"    [WARN] ROI-Align runtime error on {fname}: {e}")
+                task_skip += 1
+                continue
+            except Exception as e:
+                print(f"    [ERROR] Unexpected ROI failure on {fname}: {type(e).__name__}: {e}")
+                raise
 
             roi_flat = roi_feats.flatten(start_dim=1).cpu()  # (K, 6272)
             class_ids_kept = [int(class_ids_raw[i].item()) for i in kept_indices]
@@ -1020,11 +1034,12 @@ def _smoke_test() -> None:
     optimizer.step()
 
     print(f"\n  [4] CE loss boundary check...")
-    ce_loss = cross_entropy_loss(torch.tensor([0.9, 0.1, 0.05]), 0)
-    assert ce_loss.item() < 0.5, f"CE loss too high for easy example: {ce_loss.item()}"
-    ce_hard = cross_entropy_loss(torch.tensor([0.05, 0.9, 0.9]), 0)
+    # F.cross_entropy on logits: easy = GT logit much higher than others
+    ce_loss = cross_entropy_loss(torch.tensor([5.0, 0.1, 0.05]), 0)   # GT index 0 wins clearly
+    assert ce_loss.item() < 0.1, f"CE loss too high for easy example: {ce_loss.item()}"
+    ce_hard = cross_entropy_loss(torch.tensor([-5.0, 0.9, 0.9]), 0)   # GT index 0 loses clearly
     assert ce_hard.item() > ce_loss.item(), "Hard example should have higher loss"
-    print(f"      Easy CE={ce_loss.item():.4f}  Hard CE={ce_hard.item():.4f}  ✓")
+    print(f"      Easy CE={ce_loss.item():.4f}  Hard CE={ce_hard.item():.4f}  ✓") 
 
     print(f"\n  [5] InfoNCE loss with GT at index 0...")
     v_prime = F.normalize(torch.randn(5, WORKING_DIM), dim=1)

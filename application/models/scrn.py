@@ -67,7 +67,9 @@ class SCRN(nn.Module):
     Output
     ------
     refined_scores : Tensor  (K,)
-        Context-aware final suitability scores in [0, 1] (sigmoid-activated).
+        Raw logits (unbounded). Apply torch.sigmoid() externally for probability.
+        sigmoid is NOT applied inside this module — kept as logits for use with
+        F.cross_entropy in training and explicit sigmoid at inference output.
 
     Notes
     -----
@@ -187,14 +189,12 @@ if __name__ == "__main__":
 
     refined = model(v_prime, agca_scores)
     assert refined.shape == (K,), f"Shape: {refined.shape}"
-    assert (refined >= 0).all() and (refined <= 1).all(), "Scores outside [0,1]"
-    print(f"  K=5 forward: {tuple(refined.shape)}, range [{refined.min():.4f}, {refined.max():.4f}]  ✓")
+    print(f"  K=5 forward: {tuple(refined.shape)}, logit range [{refined.min():.4f}, {refined.max():.4f}]  ✓")
 
     # ── test with K=1 (single-candidate edge case, FR-08) ────────────
     refined1 = model(v_prime[:1], agca_scores[:1])
-    assert refined1.shape == (1,), f"K=1 shape: {refined1.shape}"
-    assert 0 <= refined1.item() <= 1, "K=1 score outside [0,1]"
-    print(f"  K=1 edge case: score={refined1.item():.4f}  ✓")
+    assert refined1.shape == (1,), f"K=1 wrong shape: {refined1.shape}"
+    print(f"  K=1 edge case: logit={refined1.item():.4f}  ✓")
 
     # ── test with K=3 (fewer than 5, FR-08) ──────────────────────────
     refined3 = model(v_prime[:3], agca_scores[:3])
