@@ -431,13 +431,12 @@ class ScoringModel(nn.Module):
 
         # Step 5 — SCRN re-scoring
         if top_k_idx.shape[0] == 1:
-            # Single-candidate: skip SCRN, convert AGCA logit to probability
-            scrn_scores = torch.sigmoid(agca_scores[top_k_idx])  # (1,)
+            scrn_scores = agca_scores[top_k_idx]   # (1,) raw logits — consistent with SCRN
         else:
             scrn_scores = self.scrn(
                 v_prime[top_k_idx],
                 agca_scores[top_k_idx],
-            )                                                 # (K,)
+            )                                       # (K,) raw logits
 
         return {
             "v_i":           v_i,
