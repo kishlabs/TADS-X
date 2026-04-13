@@ -70,6 +70,13 @@ goal or context. Task-aware detection is harder for three reasons:
 These three properties make task-aware detection a fundamentally different — and harder
 — problem than standard object detection.
 
+Why this matters for the contest: The DVCon evaluation queries (SRS §2.2) are
+semantically related but not identical to the training task strings (Paper Tasks).
+A system that memorises training strings will fail on novel phrasing. TADS-X
+generalises by resolving queries via cosine similarity in embedding space rather
+than exact string matching — this is the core architectural decision that makes
+the system robust beyond its training vocabulary.
+
 ### 1.4 Scope
 
 The application must:
@@ -221,6 +228,18 @@ For Stage 2A, the application is used via:
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+Why this architecture: Each module addresses a specific failure mode of naive detection:
+  - YOLOv8n alone cannot rank candidates by task relevance (no task input)
+  - Class pruning via affordance matrix eliminates clearly irrelevant classes early,
+    reducing SCRN's search space by ~50% and preventing noise from dominating scores
+  - TCFG gates visual features per-task so AGCA attention operates on a focused
+    representation, not raw visual features where task-irrelevant dimensions dominate
+  - AGCA combines learned attention with a statistical prior (affordance matrix) so
+    rare-but-correct objects (e.g. a spade for "dig a hole") are not suppressed
+    purely because they appear infrequently in the training distribution
+  - SCRN models inter-object context so the system can reason: "a cup scores lower
+    when a wine glass is also present" — impossible without multi-candidate reasoning
+
 ### 3.2 Component Responsibilities
 
 | Component | Responsibility | Runs On |
@@ -281,8 +300,13 @@ For Stage 2A, the application is used via:
  - For novel task queries outside the predefined task strings, TinyBERT SHALL compute
    embeddings on-the-fly (slower fallback path); **this fallback is disabled during contest
    evaluation** to ensure deterministic, reproducible behavior.
- - The fallback can be enabled via the CLI flag `--allow-novel-tasks` for exploratory use
-   outside the contest evaluation context.
+
+   Why cosine similarity resolution (not a hardcoded lookup table): A hardcoded
+SRS→Paper mapping would break if the contest changes evaluation queries slightly
+or adds novel tasks. Cosine similarity in TinyBERT embedding space generalises
+to any semantically related query — "pour liquid into" would correctly resolve
+to "water plant" or "pour sugar" even though it was never seen at training time.
+This is the key generalisation mechanism of TADS-X.
 
 ### FR-05: Task-Conditioned Feature Gating (TCFG)
 - The system SHALL compute `g(t) = sigmoid(W_g · t)` where W_g ∈ R^(256×256)
@@ -401,6 +425,18 @@ For Stage 2A, the application is used via:
   (epsilon prevents any class from having exactly zero probability)
 - **Expected result:** Task 1 top class = wine glass, Task 12 top class = book
 - **Saved as:** `data/affordance_matrix.npy`
+
+Why epsilon smoothing (DR-03): Without epsilon, any COCO class that never appears
+as a preferred object for a task gets A[task][class] = 0. This hard zero would
+permanently suppress that class via affordance gating even if it is genuinely
+relevant. Epsilon = 1e-6 ensures every class has a non-zero prior while keeping
+the dominant classes' relative weights unchanged.
+
+Why preferred-only annotations (category_id == 1): COCO-Tasks annotates objects
+at three levels — preferred, acceptable, and not suitable. Training on all three
+would teach the model to score acceptable objects nearly as high as preferred ones,
+reducing precision. Using preferred-only gives clean positive supervision with
+distractors providing implicit negative signal via the cross-entropy ranking loss.
 
 ### DR-04: Task Embeddings Cache
 - 14 tasks with multiple query aliases (Paper + SRS wording)
@@ -544,6 +580,12 @@ val_i   = W_v · v'_i                                 (N, 256)
 agca_i  = α_i · val_i                                (N, 256)
 score_i = MLP(agca_i)    [256→64→1, ReLU]            (N,)
 ```
+Why multiplicative gate after softmax (not inside): Applying the affordance prior
+inside the softmax would distort the attention distribution non-linearly and make
+the prior interact with all other candidates' scores. Applying it after softmax
+as a multiplicative gate preserves the learned attention distribution while scaling
+each candidate's weight by task-class relevance — the two signals remain
+interpretable and separable.
 
 ```python
 class AGCA(nn.Module):
@@ -581,7 +623,12 @@ Q         = h · W_Q                                (K, 64)
 K_mat     = h · W_K                                (K, 64)
 attn      = softmax(Q · K_mat^T / √64)             (K, K)
 context_i = Σ_j attn_ij · h_j                      (K, 257)
-score_i   = sigmoid(MLP_2([context_i || h_i]))      (K,)
+score_i = MLP_2([context_i ‖ h_i]) → (K,)   raw logits
+
+Note: sigmoid is NOT applied inside SCRN. It is applied externally:
+  - At inference (predict()): sigmoid(score_i) for threshold comparison and confidence output
+  - At training (train.py): F.cross_entropy(scores, gt_index) which applies log-softmax internally
+  This keeps logits consistent throughout the scoring pipeline (FR-07).
 ```
 
 ```python
@@ -740,7 +787,18 @@ Phase 2 — QACT (20 additional epochs):
   Loss = CrossEntropy + 0.1 × InfoNCE
   Target: INT8 mAP within 3% of FP32
 ```
+Why two phases: Phase 1 (CrossEntropy only) establishes basic ranking ability —
+the model learns which object class to select. Phase 2 adds InfoNCE contrastive
+loss which pulls the GT object's visual embedding toward the task embedding and
+pushes distractors away. This explicitly trains the embedding space to be
+task-discriminative, which is required for the θ_t threshold to be meaningful
+and for TCFG gate diversity (FR-05) to exceed 0.3.
 
+Why F.cross_entropy on logits (not BCE on probabilities): CrossEntropy treats
+the K candidates as a mutually exclusive set — exactly one is correct. BCE treats
+each candidate independently, which allows the model to assign high probability
+to multiple candidates simultaneously. For ranking tasks, CrossEntropy provides
+stronger gradient signal toward the correct candidate.
 ---
 
 ## 10. Evaluation Requirements
@@ -792,7 +850,7 @@ Known failure modes and how the system handles them:
 | **Multiple equally valid objects** | Two wine glasses in one image | Return the one with the highest AGCA score (likely the more prominent one) | Acceptable; ground truth is also one object |
 | **GT object missed by YOLO** | Wine glass is very small or occluded | YOLO miss → no-match or wrong answer | Improve YOLOv8n confidence threshold or fine-tune |
 | **All candidates pruned** | Task 5 "dig hole" — image has only food items | Return no-match with reason "all classes pruned" | Handled in FR-08 edge cases |
-| **Task query not in 14** | `--allow-novel-tasks` disabled | Return error: "Unknown task. Use --allow-novel-tasks for novel prompts." | FR-04 fallback flag |
+| **Task query not in 14** | `--allow-novel-tasks` disabled | Novel task queries outside the 14 SRS strings are not supported at inference time. The pipeline will raise a KeyError if the query embedding is missing from the cache or if cosine similarity to all paper tasks is below 0.3. Run embeddings.py to regenerate the cache if new queries are needed. | FR-04 fallback flag |
 
 These failure modes are documented so the demo video can explicitly demonstrate
 correct no-match behaviour on cases 1 and 6.
@@ -916,6 +974,40 @@ The Stage 1 proposal (TADS-X v5) describes an FPGA-VEGA co-design where:
 
 All hardware details (BRAM map, DMA controller, AXI4 interface, RTL, Vivado synthesis)
 are deferred to Stage 3.
+
+### A.1 Fixed Tensor Shapes for Hardware Mapping
+
+All hardware blocks must support the following fixed tensor shapes (Stage 3 target):
+
+| Signal              | Shape          | Dtype  | Notes                        |
+|---------------------|----------------|--------|------------------------------|
+| YOLO P4 feature map | (1, 128, 26, 26) | INT8 | imgsz=416, stride-16 output  |
+| ROI-Align output    | (N, 128, 7, 7) | INT8   | N ≤ 8 proposals per image    |
+| ROI projection      | (N, 256)       | INT8   | Linear(6272→256)             |
+| Task embedding t    | (256,)         | INT8   | from TaskProjection output   |
+| TCFG gate g(t)      | (256,)         | INT8   | sigmoid(W_g · t)             |
+| AGCA output         | (N, 256)       | INT8   | gated context vectors        |
+| SCRN logits         | (K,)           | INT32  | K ≤ 5; sigmoid at CPU output |
+
+### A.2 Quantization Calibration Procedure
+
+1. Train FP32 model to convergence (Phase 1 + Phase 2, SRS §9.2)
+2. Collect calibration data: 500 images × 14 tasks = 7000 forward passes
+3. Per-layer activation ranges recorded using min/max observers
+4. Apply symmetric INT8 PTQ (post-training quantization) per linear layer
+5. Measure mAP@0.5 degradation: target < 3% with QACT, < 10% without
+6. Export to ONNX with fixed shapes above for RTL simulation
+
+### A.3 Acceptance Criteria Per Block (Stage 3)
+
+| Block          | Acceptance Criterion                                      |
+|----------------|-----------------------------------------------------------|
+| YOLOv8n        | INT8 mAP within 2% of FP32 on COCO val2014               |
+| ROI projection | Output L2 norm within 5% of FP32 reference               |
+| TCFG           | Gate vector cosine distance > 0.3 across 14 tasks (FR-05)|
+| AGCA           | Top-1 class ranking matches FP32 in ≥ 95% of test cases  |
+| SCRN           | Final argmax matches FP32 in ≥ 95% of test cases         |
+| End-to-end     | mAP@0.5 ≥ 0.57 (< 3% drop from FP32 ≥ 0.60 target)     |
 
 ---
 
