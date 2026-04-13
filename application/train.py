@@ -117,6 +117,17 @@ DEFAULT_TRAIN_CONFIG: Dict = {
     "yolo_weights":         "yolov8n.pt",
 }
 
+def _compute_iou(box_a: torch.Tensor, box_b: torch.Tensor) -> float:
+    """Compute IoU between two boxes in xyxy format."""
+    x1 = max(float(box_a[0]), float(box_b[0]))
+    y1 = max(float(box_a[1]), float(box_b[1]))
+    x2 = min(float(box_a[2]), float(box_b[2]))
+    y2 = min(float(box_a[3]), float(box_b[3]))
+    inter = max(0.0, x2 - x1) * max(0.0, y2 - y1)
+    area_a = (float(box_a[2])-float(box_a[0])) * (float(box_a[3])-float(box_a[1]))
+    area_b = (float(box_b[2])-float(box_b[0])) * (float(box_b[3])-float(box_b[1]))
+    union = area_a + area_b - inter
+    return inter / union if union > 0 else 0.0
 
 def load_config(path: Optional[str]) -> Dict:
     """Load YAML or JSON config; fill missing keys with DEFAULT_TRAIN_CONFIG."""
@@ -333,18 +344,29 @@ def _build_roi_cache(
             kept_indices = kept_indices[:max_proposals]
 
             # Find GT index in kept_indices (first match)
+            # Collect GT bboxes from annotations (xyxy format)
+            gt_bboxes = []
+            for a in img_to_anns[img_id]:
+                cid = a.get("COCO_category_id")
+                bbox = a.get("bbox")   # COCO format: [x, y, w, h]
+                if cid is not None and bbox is not None:
+                    x, y, w, h = bbox
+                    gt_bboxes.append((int(cid), torch.tensor([x, y, x+w, y+h])))
+
+            # IoU-based GT assignment
             gt_index = None
+            best_iou = 0.5   # minimum IoU threshold
             for local_i, orig_i in enumerate(kept_indices):
                 c = int(class_ids_raw[orig_i].item())
-                for gt_cid in gt_coco_cat_ids:
+                det_box = boxes_orig[orig_i]   # (4,) xyxy
+                for gt_cid, gt_box in gt_bboxes:
                     if COCO_ID_TO_IDX.get(gt_cid) == c:
-                        gt_index = local_i
-                        break
-                if gt_index is not None:
-                    break
+                        iou = _compute_iou(det_box, gt_box)
+                        if iou > best_iou:
+                            best_iou = iou
+                            gt_index = local_i
 
             if gt_index is None:
-                # GT object not detected — skip this sample
                 task_skip += 1
                 continue
 
@@ -450,13 +472,9 @@ def cross_entropy_loss(scrn_scores: torch.Tensor, gt_index: int) -> torch.Tensor
     Note: SCRN outputs sigmoid probabilities.  We convert back to logits
     for numerical stability by using BCE with a one-hot target.
     """
-    K = scrn_scores.shape[0]
-    target = torch.zeros(K, device=scrn_scores.device)
-    gt_idx = min(gt_index, K - 1)   # guard: gt_index always valid after cache builder
-    target[gt_idx] = 1.0
-
-    # Use BCE loss (SCRN outputs are sigmoid probabilities)
-    return F.binary_cross_entropy(scrn_scores, target, reduction="mean")
+    gt_idx = torch.tensor([min(gt_index, scrn_scores.shape[0] - 1)],
+                          device=scrn_scores.device)
+    return F.cross_entropy(scrn_scores.unsqueeze(0), gt_idx)
 
 
 def infonce_loss(
@@ -521,7 +539,7 @@ def _train_step(
 
     # Score proposals — use top_k=0 during training (all proposals go through SCRN)
     out = scoring_model.score_proposals(
-        roi_flat, t.detach() if phase == 1 else t,
+        roi_flat, t,
         paper_task_id, class_ids, A.to(device), top_k=0
     )
 
@@ -609,7 +627,7 @@ def calibrate_thresholds(
             top_k_idx   = out["top_k_indices"]          # (K,)
 
             best_k     = int(scrn_scores.argmax().item())
-            best_score = float(scrn_scores[best_k].item())
+            best_score = float(torch.sigmoid(scrn_scores[best_k]).item())
             pred_idx   = int(top_k_idx[best_k].item())
             correct    = (pred_idx == gt_index)
 

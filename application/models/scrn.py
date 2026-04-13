@@ -151,7 +151,7 @@ class SCRN(nn.Module):
         mlp_in = torch.cat([context, h], dim=1)               # (K, 514)
         logits = self.mlp2(mlp_in).squeeze(1)                 # (K,)
 
-        return torch.sigmoid(logits)                           # (K,)  ∈ [0,1]
+        return logits                                          # (K,)  raw logits
 
     # ------------------------------------------------------------------
     def extra_repr(self) -> str:

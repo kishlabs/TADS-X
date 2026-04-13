@@ -204,6 +204,14 @@ def resolve_task_id(
               f"→ paper task {best_task_id_1} (row {best_task_id_0}) "
               f"'{best_task_str}'  sim={best_sim:.4f}")
 
+
+    if best_sim < 0.3:
+        raise KeyError(
+            f"resolve_task_id: '{srs_query}' has no close paper task match "
+            f"(best sim={best_sim:.4f} < 0.3). "
+            f"Use --allow-novel-tasks or check that embeddings.py has been run."
+        )
+
     return TaskResolution(
         paper_task_id   = best_task_id_0,
         paper_task_id_1 = best_task_id_1,
@@ -654,14 +662,14 @@ def predict(
 
     # ── Step 11: argmax vs θ_t ────────────────────────────────────────
     best_k = int(scrn_scores.argmax().item())      # index in [0, K)
-    best_score = float(scrn_scores[best_k].item())
+    best_score_prob = float(torch.sigmoid(scrn_scores[best_k]).item())  # logit → prob
 
     theta = per_task_thresholds.get(paper_task_id_1, DEFAULT_THETA)
 
-    if best_score < theta:
+    if best_score_prob < theta:
         if verbose:
-            print(f"  [predict] Best score {best_score:.4f} < θ_t={theta:.4f} → no-match")
-        return _no_match(f"below threshold (score={best_score:.4f}, θ_t={theta:.4f})")
+            print(f"  [predict] Best score {best_score_prob:.4f} < θ_t={theta:.4f} → no-match")
+        return _no_match(f"below threshold (score={best_score_prob:.4f}, θ_t={theta:.4f})")
 
     # ── Assemble output ───────────────────────────────────────────────
     best_proposal_idx = int(top_k_idx[best_k].item())
@@ -672,12 +680,12 @@ def predict(
 
     if verbose:
         print(f"  [predict] → '{best_proposal.class_name}'  "
-              f"score={best_score:.4f}  bbox={tuple(round(v, 1) for v in bbox_xywh)}")
+              f"score={best_score_prob:.4f}  bbox={tuple(round(v, 1) for v in bbox_xywh)}")
 
     return {
         "bbox":                bbox_xywh,
         "class":               best_proposal.class_name,
-        "confidence":          best_score,
+        "confidence":          best_score_prob,
         "task":                task_query,
         "resolved_paper_task": resolution.paper_task_str,
     }

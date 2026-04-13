@@ -155,12 +155,12 @@ def _compute_ap(
     recalls    = tp_cumsum / n_gt
     precisions = tp_cumsum / (tp_cumsum + fp_cumsum + 1e-9)
 
-    # 11-point interpolation (PASCAL VOC style)
+    # 101-point interpolation (COCO style)
     ap = 0.0
-    for r_thresh in np.linspace(0, 1, 11):
+    for r_thresh in np.linspace(0, 1, 101):
         p_at_r = precisions[recalls >= r_thresh]
         ap += (p_at_r.max() if len(p_at_r) > 0 else 0.0)
-    return ap / 11.0
+    return ap / 101.0
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -351,8 +351,10 @@ def _evaluate_task(
     Each image is processed independently (no batching — FR-10 note).
     """
     image_ids = sorted(gt_annotations.keys())
-    if subset:
-        image_ids = image_ids[:subset]
+    if subset and len(image_ids) > subset:
+        import random
+        rng = random.Random(42)          # fixed seed = reproducible across runs
+        image_ids = rng.sample(image_ids, subset)
 
     n_gt = len(image_ids)
     if n_gt == 0:
@@ -413,8 +415,7 @@ def _evaluate_task(
             predictions.append((float(confidence), is_tp))
 
         except Exception as e:
-            if verbose:
-                print(f"    [WARN] Error on image {img_id}: {e}")
+            print(f"    [ERROR] image {img_id}: {type(e).__name__}: {e}")
             predictions.append((0.0, 0))
 
     # Sort by descending confidence for AP computation
@@ -456,7 +457,7 @@ def evaluate(
     -------
     results dict (also written to results/map_per_task.json)
     """
-    img_dir    = os.path.join(coco_dir, "val2014")
+    img_dir    = os.path.join(coco_dir, "val2014", "val2014")
     coco_anns  = os.path.join(coco_dir, "annotations", "instances_val2014.json")
 
     for path, label in [
