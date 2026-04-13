@@ -124,7 +124,7 @@ class SCRN(nn.Module):
         """
         Returns
         -------
-        refined_scores : Tensor  (K,)  in [0, 1]
+        refined_scores : Tensor  (K,)  in raw logits (apply sigmoid for probability)
         """
         # ── shape guards ─────────────────────────────────────────────
         K = v_prime.shape[0]

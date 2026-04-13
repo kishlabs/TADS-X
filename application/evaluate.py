@@ -457,7 +457,7 @@ def evaluate(
     Parameters
     ----------
     baseline : None (full TADS-X) | "yolo-only" | "affordance-only" | "cosine"
-    subset   : if set, only use first N images per task (SRS §10.6)
+    subset   : if set, "Randomly sample N images per task (fixed seed for reproducibility)"
 
     Returns
     -------
@@ -792,7 +792,7 @@ def main():
 
     # Eval modes
     parser.add_argument("--subset",      type=int, default=None,
-                        help="Evaluate only first N images per task (SRS §10.6)")
+                        help="Randomly sample N images per task (fixed seed for reproducibility)")
     parser.add_argument("--iou-thresh",  type=float, default=0.5)
     parser.add_argument("--baseline",    type=str, default=None,
                         choices=["yolo-only", "affordance-only", "cosine"],
