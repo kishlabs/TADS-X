@@ -406,7 +406,7 @@ class ScoringModel(nn.Module):
             'agca_scores'   : (N,)      raw AGCA logits (all proposals)
             'agca_vecs'     : (N, 256)  gated context vectors
             'top_k_indices' : (K,)      indices of SCRN candidates in [0, N)
-            'scrn_scores'   : (K,)      context-aware scores ∈ [0,1]
+            'scrn_scores'   : (K,)      context-aware raw logits (sigmoid applied in predict())
         """
         N = roi_flat.shape[0]
 
@@ -968,7 +968,7 @@ def _test_scoring_model():
     print(f"  scrn_scores: {out['scrn_scores'].tolist()}")
 
     # Training mode: top_k=0 → all proposals
-    out_train = model.score_proposals(
+    out_train = model.score_proposals( 
         roi_flat, t, paper_task_id, coco_ids, A, top_k=0
     )
     assert out_train["top_k_indices"].shape[0] == N
@@ -978,8 +978,8 @@ def _test_scoring_model():
     out1 = model.score_proposals(
         roi_flat[:1], t, paper_task_id, coco_ids[:1], A, top_k=5
     )
+    # scrn_scores are raw logits; no range assertion needed
     assert out1["scrn_scores"].shape == (1,)
-    assert 0 <= out1["scrn_scores"].item() <= 1
     print(f"  K=1 edge case: scrn_score={out1['scrn_scores'].item():.4f}  ✓")
 
     print(f"\n  All ScoringModel tests passed ✓")
