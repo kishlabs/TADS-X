@@ -256,6 +256,7 @@ def _letterbox_boxes(
     return boxes_lb
 
 
+
 def _extract_roi_features(
     p4_feat:     torch.Tensor,   # (1, 128, fh, fw) — from YOLO P4 hook
     boxes_xyxy:  torch.Tensor,   # (N, 4) in original image pixel space
@@ -266,39 +267,47 @@ def _extract_roi_features(
     """
     ROI-Align on the P4 feature map for each proposal.
 
-    Parameters
-    ----------
-    p4_feat    : Tensor  (1, 128, fh, fw)
-    boxes_xyxy : Tensor  (N, 4)  in original image coordinates
-    orig_shape : (orig_h, orig_w)
-    imgsz      : processed square image size
-    output_size: spatial output per ROI (default 7 → 7×7 output)
+    Handles non-square P4 feature maps correctly — COCO images are not square,
+    so YOLOv8n letterboxes them and produces e.g. (10,13) or (13,9) P4 maps.
+    We use the shorter spatial dimension's stride as spatial_scale (since
+    roi_align's spatial_scale is a single scalar), and map boxes into the
+    letterboxed coordinate space before passing to roi_align.
 
-    Returns
-    -------
-    Tensor  (N, 128, output_size, output_size)  — one 7×7 feature grid per proposal
+    The letterboxed space has the image scaled so its longer side == imgsz,
+    with grey padding on the shorter side.  Box coordinates in this space
+    are what roi_align expects when spatial_scale = 1/stride_of_longer_side.
     """
     _, C, fh, fw = p4_feat.shape
-    # Stride from processed imgsz to feature map (e.g. 416→26 ≡ stride 16)
-    stride_h = imgsz / fh
-    stride_w = imgsz / fw
-    assert abs(stride_h - stride_w) < 0.1, (
-        f"Non-square stride ({stride_h:.1f} vs {stride_w:.1f}): "
-        f"P4 shape {(fh, fw)} with imgsz {imgsz}"
-    )
-    stride = stride_h
 
-    # Map boxes from original image → letterboxed imgsz space
-    boxes_lb = _letterbox_boxes(boxes_xyxy, orig_shape, imgsz)   # (N, 4)
+    # Compute per-axis strides (imgsz / feature_map_dim)
+    # These will differ for non-square images (e.g. stride_h=41.6, stride_w=32.0)
+    # Use the LARGER stride (= stride along the longer original image dimension
+    # = the dimension that was NOT padded = stride 32 for a 416-wide featuremap).
+    # spatial_scale = 1 / stride maps letterboxed pixel coords → feature map coords.
+    stride_h = imgsz / fh   # vertical stride
+    stride_w = imgsz / fw   # horizontal stride
 
-    # roi_align expects boxes as list[Tensor(N,4)] or Tensor(N,5) with batch idx.
-    # We always have a single-image batch (batch_size=1 at inference).
-    # spatial_scale converts box coords (in imgsz space) → feature map space.
+    # The shorter stride corresponds to the longer image dimension (no padding).
+    # roi_align needs ONE spatial_scale; use min stride (= 1/max_spatial_dim).
+    # This is equivalent to using the stride of the unpadded axis.
+    spatial_scale = 1.0 / min(stride_h, stride_w)
+
+    # Map boxes from original image → letterboxed imgsz space.
+    # _letterbox_boxes uses max(oh,ow) scale, matching YOLO's letterbox exactly.
+    boxes_lb = _letterbox_boxes(boxes_xyxy, orig_shape, imgsz).to(p4_feat.device)   # (N, 4)  
+
+    # Clamp box coords to the actual feature map extent in pixel space
+    # (fh * stride_h) x (fw * stride_w) — avoids out-of-bounds for padded regions
+    boxes_lb[:, 0].clamp_(0.0, fw * stride_w)
+    boxes_lb[:, 1].clamp_(0.0, fh * stride_h)
+    boxes_lb[:, 2].clamp_(0.0, fw * stride_w)
+    boxes_lb[:, 3].clamp_(0.0, fh * stride_h)
+
     rois = roi_align(
         p4_feat,
-        [boxes_lb],                   # list with one (N,4) tensor
+        [boxes_lb],
         output_size=(output_size, output_size),
-        spatial_scale=1.0 / stride,   # imgsz coords → feature map coords
+        spatial_scale=spatial_scale,
         aligned=True,
     )                                  # (N, 128, 7, 7)
     return rois

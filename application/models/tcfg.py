@@ -30,14 +30,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from task_definitions import WORKING_DIM  # noqa: F401 — keeps dim constant in one place
-
-
-# Allow importing WORKING_DIM from task_definitions when available, else fall back
-try:
-    from task_definitions import WORKING_DIM as _DIM  # type: ignore
-except ImportError:
-    _DIM = 256
+from task_definitions import WORKING_DIM as _DIM
 
 
 class TCFG(nn.Module):

@@ -38,10 +38,7 @@ from typing import List
 import torch
 import torch.nn as nn
 
-try:
-    from task_definitions import WORKING_DIM as _DIM  # type: ignore
-except ImportError:
-    _DIM = 256
+from task_definitions import WORKING_DIM as _DIM
 
 try:
     from task_definitions import NUM_TASKS as _NUM_TASKS  # type: ignore

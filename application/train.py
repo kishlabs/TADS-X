@@ -209,7 +209,7 @@ def _build_roi_cache(
 
     ann_suffix = "_train.json" if split == "train" else "_test.json"
     img_subdir = "train2014" if split == "train" else "val2014"
-    img_dir = os.path.join(coco_dir, img_subdir)
+    img_dir = os.path.join(coco_dir, img_subdir, img_subdir)
 
     print(f"\n{'='*60}")
     print(f"  Building ROI feature cache  [{split}]")
@@ -283,7 +283,7 @@ def _build_roi_cache(
             # Run YOLO
             try:
                 results = yolo(img_path, imgsz=imgsz, conf=yolo_conf,
-                               device="cpu", verbose=False)
+                               device=device, verbose=False)
             except Exception as e:
                 print(f"    [WARN] YOLO failed on {fname}: {e}")
                 task_skip += 1
@@ -1072,6 +1072,7 @@ def main():
             max_proposals = cfg.get("max_proposals", 8),
             prune_thresh  = cfg.get("prune_thresh", 0.01),
             affordance_matrix = A,
+            device= "cuda",
             max_images    = args.max_images,
         )
         if args.build_val_cache:
@@ -1086,6 +1087,7 @@ def main():
                 max_proposals = cfg.get("max_proposals", 8),
                 prune_thresh  = cfg.get("prune_thresh", 0.01),
                 affordance_matrix = A,
+                device ="cuda",
                 max_images    = args.max_images,
             )
         return

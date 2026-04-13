@@ -38,10 +38,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-try:
-    from task_definitions import WORKING_DIM as _DIM  # type: ignore
-except ImportError:
-    _DIM = 256
+from task_definitions import WORKING_DIM as _DIM
 
 # h_dim = WORKING_DIM + 1 (agca_score scalar appended)
 _H_DIM = _DIM + 1       # 257

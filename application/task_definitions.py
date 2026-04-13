@@ -136,3 +136,4 @@ COCO_ID_TO_IDX = {cat_id: idx for idx, cat_id in enumerate(_COCO_CAT_IDS)}
 IDX_TO_CLASS   = {idx: name for idx, name in enumerate(COCO_CLASSES)}
 NUM_CLASSES    = 80
 NUM_TASKS      = 14
+WORKING_DIM = 256   # TinyBERT projection output dim — shared by TCFG, AGCA, SCRN, pipeline
