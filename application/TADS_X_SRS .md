@@ -333,7 +333,7 @@ This is the key generalisation mechanism of TADS-X.
 - The system SHALL apply scaled dot-product self-attention over all K candidates —
   each candidate attends to every other, so that co-occurring objects influence
   each other's final scores
-- The system SHALL output: `score_i = sigmoid(MLP_2([context_i || h_i]))`
+- The system SHALL output: `score_i = MLP_2([context_i ‖ h_i]) → (K,)`
 - Top-5 at inference SHALL retain ground-truth object in ≥ 99.5% of val2014 images
 
 ### FR-08: Final Selection and Threshold Calibration
