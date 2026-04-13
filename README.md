@@ -1,44 +1,132 @@
-# TADS-X: Task-Aware Dual-Stream Detection with Affordance Gating
+<div align="center">
+  <h1>🎯 TADS-X: Task-Aware Dual-Stream Detection</h1>
+  <p><strong>A Next-Generation Object Detector with Affordance Gating</strong></p>
+  
+  [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
+  [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-ee4c2c.svg)](https://pytorch.org/)
+  [![YOLOv8](https://img.shields.io/badge/YOLO-v8n-yellow.svg)](https://ultralytics.com/)
+  [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+</div>
 
-## Overview
-Standard object detectors answer: **"What objects are in this image?"**
+<br />
 
-**TADS-X** answers: **"Which object in this image should I use for a given task?"**
+## 📖 About The Repository
 
-Instead of treating all detected objects equally, TADS-X implements a task-aware approach. It determines the functional relationship between an object and a goal, filtering and ranking detected items based on their relevance to a provided task (e.g., `"serve wine"`, `"sit on"`, `"dig a hole with"`).
+**TADS-X** (Task-Aware Dual-Stream Detection with Affordance Gating) is the official software submission by **Team ChipSmiths** for the **DVCon India 2026 Design Contest (Stage 2A)**. 
 
-This project represents Team ChipSmiths' software submission for the **DVCon India 2026 Design Contest — Stage 2A**. 
+Unlike conventional object detectors that simply identify what items are present in a scene, TADS-X is designed with a **goal-oriented understanding**. It processes both a visual scene and a linguistic task prompt, filtering out irrelevant objects to answer one critical question: 
 
-## Repository Structure
+> *"Which single object in this image should I use for a specific user-provided task?"*
 
-*   `application/`: Contains the core Python scripts, modules, and SRS for the inference pipeline.
-    *   `pipeline.py`: Main integration joining all modules.
-    *   `TADS_X_SRS .md`: Complete Software Requirements Specifications covering the architecture, requirements, and theoretical background of the system.
-    *   `build_affordance.py`: Helper script to construct the affordance prior matrix.
-    *   `embeddings.py`: TinyBERT text embedding cache generator.
-*   `tads_x/`: Auxiliary data folder.
-*   `Reference Docs/`: Reference papers (e.g., COCO-Tasks) and DVCon contest guidelines/Q&A docs.
+If presented with an image of a **cup**, a **wine glass**, and a **bottle**, TADS-X ranks and predicts the correct object based on tasks like `"serve wine"`, `"pour water into"`, or `"carry things in"`.
 
-### The Dataset (`COCO/` Folder)
+---
 
-> [!NOTE]
-> The `COCO` subdirectory contains large dataset files (approx. 20GB) and is **explicitly ignored via `.gitignore`** to prevent bloating the remote repository. 
+## ✨ Features & Pipeline
 
-To recreate the environment, you must manually reconstruct the `COCO` directory at the project root with the following subdirectories:
+TADS-X employs a dual-stream architecture (Vision + Language) to combine world knowledge with spatial awareness:
 
-*   `train2014/`: COCO 2014 Training images (83K images).
-*   `val2014/`: COCO 2014 Evaluation images (41K images).
-*   `annotations_trainval2014/`: Standard COCO `instances_train2014.json` / `instances_val2014.json`. 
-*   `dataset-master/`: COCO-Tasks specific annotation files (e.g., `task_1_train.json` ... `task_14_test.json`).
+1. **Vision Stream (YOLOv8n)**: Extremely fast CPU-based detection that isolates all spatial boundary boxes and computes intermediate `P4` feature maps.
+2. **Language Stream (TinyBERT)**: Encodes natural language task inputs into high-dimensional intent embeddings.
+3. **Task-Conditioned Feature Gating (TCFG)**: An attention mechanism that suppresses visual properties unrelated to the textual prompt and highlights critical affordance traits.
+4. **Affordance-Guided Cross-Attention (AGCA)**: A scoring threshold utilizing the relationship between the textual task constraints and object traits.
+5. **Scene Context Re-scoring (SCRN)**: Analyzes the top 5 predicted candidates against *each other* to ensure that a dominant object (e.g., wine glass) correctly suppresses a valid but weaker alternative (e.g., a paper cup) based on spatial availability.
 
-## Architecture & How It Works
+---
 
-The inference pipeline currently executes natively on CPU using the following core components:
+## 🛠️ Installation & Setup
 
-1.  **Detection Base:** Extracts bounding boxes and P4 feature maps via `YOLOv8n`.
-2.  **Task Encoding:** Caches and retrieves task embeddings using `TinyBERT`.
-3.  **Task-Conditioned Feature Gating (TCFG):** Modulates visual dimensions based on task relevance.
-4.  **Affordance-Guided Cross-Attention (AGCA):** Combines system prior knowledge with text-vision alignment scoring.
-5.  **Scene Context Re-scoring (SCRN):** Models dynamic inter-object relationships using self-attention across the top candidate boxes.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/kishlabs/TADS-X.git
+   cd TADS-X
+   ```
 
-For comprehensive details on methodology and evaluation benchmarks, consult the full `application/TADS_X_SRS .md` document.
+2. **Install Dependencies**
+   It is recommended to use a virtual environment (`.venv`).
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows use: .venv\Scripts\activate
+   pip install torch torchvision ultralytics transformers numpy scipy
+   ```
+
+3. **COCO Dataset Preparation**
+   The MS COCO framework is used for evaluation and validation, but due to file sizes (>20GB) it is **excluded from Git**. You must manually download and arrange it locally in the repository root:
+   ```text
+   📦 COCO
+    ┣ 📂 train2014/                     (COCO 2014 Training Images)
+    ┣ 📂 val2014/                       (COCO 2014 Validation Images)
+    ┣ 📂 annotations_trainval2014/      (Standard COCO JSON annotations)
+    ┗ 📂 dataset-master/                (COCO-Tasks Annotations task_1 to task_14)
+   ```
+
+---
+
+## 🚀 Usage & Available Options
+
+The command-line tools can execute single predictions, batch testing, or complete model training loops. All inference processing strictly restricts operations to **CPU** as per DVCon 2026 Stage 2A parameters.
+
+### 1. Single Image Inference
+Predict the most suitable object for a given task within a single test image.
+```bash
+python application/pipeline.py --image "path/to/test_image.jpg" --task "serve wine"
+```
+**Output Example:**
+```json
+{
+  "bbox": [234, 156, 89, 112],
+  "class": "wine glass",
+  "confidence": 0.942
+}
+```
+
+### 2. Validation & Evaluation Benchmark
+Evaluates the PyTorch checkpoint across the entire metric threshold of all 14 designated tasks globally.
+```bash
+python application/evaluate.py \
+    --coco-dir "./COCO" \
+    --tasks-dir "./COCO/dataset-master"
+```
+
+### 3. Fast Validation (Subset Mode)
+For iterative debugging or performance optimization, you can rapidly test against a random subset.
+```bash
+python application/evaluate.py \
+    --coco-dir "./COCO" \
+    --tasks-dir "./COCO/dataset-master" \
+    --subset 500
+```
+
+### 4. Neural Training
+Train the TCFG, AGCA, and SCRN neural heads over epochs defined within your yaml config.
+```bash
+python application/train.py --config "configs/train_config.yaml"
+```
+
+---
+
+## 📁 Repository Structure
+
+```text
+📦 TADS-X
+ ┣ 📂 application/
+ ┃  ┣ 📂 models/           # Core Neural Architectures (SCRN, AGCA, TCFG)
+ ┃  ┣ 📂 data/             # Persistent matrix structures & affordance lookup arrays
+ ┃  ┣ 📜 pipeline.py       # Core prediction aggregation framework (Inference End-Point)
+ ┃  ┣ 📜 embeddings.py     # TinyBERT logic handles
+ ┃  ┣ 📜 train.py          # Unified model weighting script
+ ┃  ┣ 📜 TADS_X_SRS .md    # The exhaustive Stage 2A Specification Guide (System Requirements)
+ ┃  ┗ 📜 yolov8n.pt        # Base pre-trained visual detection weights
+ ┣ 📂 Reference Docs/      # DVCon Problem Statements, constraints, and research papers
+ ┣ 📂 tads_x/              # Local module and matrix data mirror
+ ┣ 📜 README.md            # Repository overview
+ ┗ 📜 .gitignore           # Overarching git cache, python configs, & dataset omission specs
+```
+
+---
+
+## 📊 Performance Goals
+
+By running iterative scene context refinement on FP32 environments, the application attempts to surpass normal object detection constraints and is actively targeted to achieve an `mAP@0.5 > 0.60` on the **COCO-Tasks val2014 benchmark**.
+
+*Refer to the full 40+ page documentation trace within `application/TADS_X_SRS .md` for rigorous matrix ablation charts, algorithm math, and problem specifications.*
