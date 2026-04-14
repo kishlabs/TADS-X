@@ -101,6 +101,7 @@ class SCRN(nn.Module):
         self.mlp2 = nn.Sequential(
             nn.Linear(self.h_dim * 2, mlp_hidden, bias=True),
             nn.ReLU(inplace=True),
+            nn.Dropout(p=0.3),
             nn.Linear(mlp_hidden, 1, bias=True),
         )
 
@@ -110,10 +111,11 @@ class SCRN(nn.Module):
     def _init_weights(self) -> None:
         for proj in (self.W_Q, self.W_K):
             nn.init.xavier_uniform_(proj.weight)
-        nn.init.xavier_uniform_(self.mlp2[0].weight)
-        nn.init.zeros_(self.mlp2[0].bias)
-        nn.init.xavier_uniform_(self.mlp2[2].weight)
-        nn.init.zeros_(self.mlp2[2].bias)
+        # Init only Linear layers (skip ReLU and Dropout by filtering)
+        linear_layers = [m for m in self.mlp2 if isinstance(m, nn.Linear)]
+        for layer in linear_layers:
+            nn.init.xavier_uniform_(layer.weight)
+            nn.init.zeros_(layer.bias)
 
     # ------------------------------------------------------------------
     def forward(

@@ -46,7 +46,6 @@ USAGE:
       --cache-dir   data/roi_cache
 
   # Step 2 — train
-  python train.py \\
       --coco-dir    E:/DVCon/COCO \\
       --tasks-dir   E:/DVCon/COCO/dataset-master/coco-tasks/annotations \\
       --cache-dir   data/roi_cache \\
@@ -550,6 +549,14 @@ def _train_step(
     raw_vec  = raw_cache[task_str].to(device)            # (312,)
     with torch.set_grad_enabled(True):
         t = projection(raw_vec)                          # (256,)  gradient flows
+        # Task separation loss — prevents projection from collapsing all 14 task
+        # embeddings into a near-identical cluster (which breaks resolve_task_id)
+        all_raw = torch.stack([raw_cache[s].to(device) for s in PAPER_TASK_LIST])  # (14, 312)
+        all_t   = projection(all_raw)                                                # (14, 256)
+        all_t_norm = F.normalize(all_t, dim=1)                                       # (14, 256)
+        sep_sim    = all_t_norm @ all_t_norm.T                                       # (14, 14)
+        sep_labels = torch.arange(14, device=device)
+        task_sep_loss = F.cross_entropy(sep_sim / 0.1, sep_labels)
 
     # Score proposals — use top_k=0 during training (all proposals go through SCRN)
     out = scoring_model.score_proposals(
@@ -565,10 +572,12 @@ def _train_step(
 
     if phase == 2:
         nce  = infonce_loss(v_prime, t, gt_index, tau)
-        loss = ce + lambda_nce * nce
+        sep_w = 0.05
+        loss = ce + lambda_nce * nce + sep_w * task_sep_loss
         return loss, float(ce.item()), float(nce.item())
 
-    return ce, float(ce.item()), 0.0
+    sep_w = 0.05
+    return ce + sep_w * task_sep_loss, float(ce.item()), float(task_sep_loss.item())
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -869,7 +878,6 @@ def train(
 
         for batch in train_loader:
             optimizer.zero_grad()
-            batch_loss = torch.tensor(0.0, device=device, requires_grad=True)
             batch_count = 0
 
             for sample in batch:
@@ -879,16 +887,15 @@ def train(
                 )
                 if loss is None:
                     continue
-                batch_loss = batch_loss + loss
+                (loss / len(batch)).backward()      
                 epoch_ce  += ce_f
                 epoch_nce += nce_f
                 batch_count += 1
 
             if batch_count > 0:
-                (batch_loss / batch_count).backward()
                 nn.utils.clip_grad_norm_(all_params, max_norm=1.0)
                 optimizer.step()
-                epoch_loss += float(batch_loss.item()) / batch_count
+                epoch_loss += float(loss.item())
                 n_samples  += batch_count
 
         scheduler.step()
@@ -914,6 +921,13 @@ def train(
                 best_val = val_loss
                 torch.save(scoring_model.state_dict(), best_ckpt)
                 print(f"          ✓ New best checkpoint saved → {best_ckpt}")
+
+            early_stop_counter = 0  # reset on improvement
+        else:
+            early_stop_counter += 1
+            if early_stop_counter >= 4:   # 4 × val_every_n_epochs = 12 epochs patience
+                print(f"          Early stopping triggered (no improvement for 4 evals)")
+                break
 
         # ── Periodic checkpoints ────────────────────────────────────────
         if epoch % int(cfg.get("checkpoint_every", 10)) == 0:

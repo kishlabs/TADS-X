@@ -4,3 +4,13 @@ __pycache__/
 .env
 .venv
 application/tadsx/
+checkpoints/
+checkpoints_test/
+application/data/
+application/data/roi_cache/
+application/data/roi_cache_test/
+application/data/roi_cache_val/
+application/data/roi_cache_train/
+application/data/roi_cache_val_full/
+data/
+checkpoint/

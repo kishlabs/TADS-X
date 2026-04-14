@@ -464,7 +464,7 @@ def evaluate(
     results dict (also written to results/map_per_task.json)
     """
     img_dir    = os.path.join(coco_dir, "val2014")
-    coco_anns  = os.path.join(coco_dir, "annotations", "instances_val2014.json")
+    coco_anns  = os.path.join(coco_dir, "annotations_trainval2014", "annotations", "instances_val2014.json")
 
     for path, label in [
         (img_dir,         "val2014 image directory"),

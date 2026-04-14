@@ -487,7 +487,7 @@ def load_yolo(weights: str = "yolov8n.pt"):
     store = {}
 
     # SRS FR-01: hook on model.model.model[9] (C2f block, stride 16)
-    handle = yolo.model.model[9].register_forward_hook(_make_p4_hook(store))
+    handle = yolo.model.model[12].register_forward_hook(_make_p4_hook(store))
     return yolo, store, handle
 
 
