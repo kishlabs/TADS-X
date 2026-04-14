@@ -470,43 +470,7 @@ def collate_fn(batch: List[dict]) -> List[dict]:
     """
     return batch
 
-class TaskBalancedSampler(torch.utils.data.Sampler):
-    """
-    Yields indices such that each epoch samples equally from all 14 tasks.
-    Each task contributes exactly ceil(total_samples / 14) indices per epoch,
-    drawn with replacement if a task has fewer samples than that quota.
-    """
-    def __init__(self, dataset: COCOTasksDataset, samples_per_task: Optional[int] = None):
-        self.task_indices: List[List[int]] = [[] for _ in range(NUM_TASKS)]
 
-        for idx, path in enumerate(dataset.samples):
-            # Extract task file_id from path: .../task_N/sample_*.pt
-            parts = path.replace("\\", "/").split("/")
-            task_dir = [p for p in parts if p.startswith("task_")][-1]
-            file_id = int(task_dir.split("_")[1]) - 1  # 0-based
-            self.task_indices[file_id].append(idx)
-
-        # How many samples per task per epoch
-        max_task = max(len(t) for t in self.task_indices if len(t) > 0)
-        self.n_per_task = samples_per_task or max_task
-        self.n_tasks_active = sum(1 for t in self.task_indices if len(t) > 0)
-
-    def __iter__(self):
-        all_indices = []
-        for task_idx_list in self.task_indices:
-            if not task_idx_list:
-                continue
-            # Sample with replacement to reach quota
-            if len(task_idx_list) >= self.n_per_task:
-                chosen = random.sample(task_idx_list, self.n_per_task)
-            else:
-                chosen = random.choices(task_idx_list, k=self.n_per_task)
-            all_indices.extend(chosen)
-        random.shuffle(all_indices)
-        return iter(all_indices)
-
-    def __len__(self):
-        return self.n_per_task * self.n_tasks_active
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Loss functions  (SRS §9.2)
@@ -566,6 +530,7 @@ def _train_step(
     lambda_nce:     float,
     tau:            float,
     device:         str,
+    epoch:          int = 0,
 ) -> Tuple[torch.Tensor, float, float]:
     """
     Compute loss for one sample.
@@ -574,11 +539,10 @@ def _train_step(
     """
     roi_flat       = sample["roi_features"].to(device)   # (N, 6272)
     # Feature augmentation — train only (no effect at inference; cache stays clean)
-    if scoring_model.training:
-        # 1. Gaussian noise (σ=0.02 — small relative to L2-normalised features)
-        roi_flat = roi_flat + torch.randn_like(roi_flat) * 0.02
-        # 2. Random feature dropout (5% of dimensions zeroed per sample)
-        drop_mask = (torch.rand(roi_flat.shape[1], device=device) > 0.05).float()
+    if scoring_model.training and epoch > 10:
+        # Apply augmentation only after epoch 10, with reduced noise
+        roi_flat = roi_flat + torch.randn_like(roi_flat) * 0.01
+        drop_mask = (torch.rand(roi_flat.shape[1], device=device) > 0.03).float()
         roi_flat = roi_flat * drop_mask.unsqueeze(0)
     class_ids      = sample["class_ids"]                 # List[int]
     gt_index       = int(sample["gt_index"])
@@ -614,13 +578,13 @@ def _train_step(
     # Phase 1: CrossEntropy only
     ce = cross_entropy_loss(scrn_scores, gt_index)
 
+    sep_w = 0.05 if epoch > 5 else 0.0
+
     if phase == 2:
         nce  = infonce_loss(v_prime, t, gt_index, tau)
-        sep_w = 0.05
         loss = ce + lambda_nce * nce + sep_w * task_sep_loss
         return loss, float(ce.item()), float(nce.item())
 
-    sep_w = 0.05
     return ce + sep_w * task_sep_loss, float(ce.item()), float(task_sep_loss.item())
 
 
@@ -729,7 +693,7 @@ def calibrate_thresholds(
             precision = tp / (tp + fp_count + 1e-9)
             f1        = 2 * precision * recall / (precision + recall + 1e-9)
 
-            if recall >= 0.99 and f1 > best_f1:
+            if recall >= 0.90 and f1 > best_f1:
                 best_f1    = f1
                 best_theta = θ
 
@@ -806,6 +770,30 @@ def validate(
     scoring_model.train()
     projection.train()
     return total_loss / max(count, 1)
+
+@torch.no_grad()
+def val_top1_accuracy(val_loader, scoring_model, projection, raw_cache, A, device):
+    scoring_model.eval()
+    projection.eval()
+    correct = 0
+    total = 0
+    for batch in val_loader:
+        for sample in batch:
+            roi_flat = sample["roi_features"].to(device)
+            class_ids = sample["class_ids"]
+            gt_index = int(sample["gt_index"])
+            paper_task_id = int(sample["paper_task_id"])
+            task_str = PAPER_TASK_LIST[paper_task_id]
+            t = projection(raw_cache[task_str].to(device))
+            out = scoring_model.score_proposals(roi_flat, t, paper_task_id, class_ids, A.to(device), top_k=0)
+            scrn_scores = out["scrn_scores"]
+            pred = scrn_scores.argmax().item()
+            if pred == gt_index:
+                correct += 1
+            total += 1
+    scoring_model.train()
+    projection.train()
+    return correct / max(total, 1)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -887,10 +875,28 @@ def train(
     # ── Datasets + loaders ───────────────────────────────────────────────
     train_dataset = COCOTasksDataset(train_cache)
     val_dataset   = COCOTasksDataset(val_cache)
-    train_sampler = TaskBalancedSampler(train_dataset)
-    train_loader  = DataLoader(
+
+    from torch.utils.data import WeightedRandomSampler
+
+    task_counts = [0] * NUM_TASKS
+    sample_weights = []
+    for idx, path in enumerate(train_dataset.samples):
+        # extract task number from e.g. ".../task_5/sample_123.pt"
+        parts = path.replace("\\", "/").split("/")
+        task_dir = [p for p in parts if p.startswith("task_")][-1]
+        task_id = int(task_dir.split("_")[1]) - 1
+        task_counts[task_id] += 1
+
+    for idx, path in enumerate(train_dataset.samples):
+        parts = path.replace("\\", "/").split("/")
+        task_dir = [p for p in parts if p.startswith("task_")][-1]
+        task_id = int(task_dir.split("_")[1]) - 1
+        sample_weights.append(1.0 / task_counts[task_id])
+
+    sampler = WeightedRandomSampler(sample_weights, num_samples=len(train_dataset), replacement=True)
+    train_loader = DataLoader(
         train_dataset, batch_size=cfg["batch_size"],
-        sampler=train_sampler,
+        sampler=sampler,
         collate_fn=collate_fn, num_workers=0, drop_last=False,
     )
     val_loader = DataLoader(
@@ -914,6 +920,7 @@ def train(
     lambda_nce = float(cfg["lambda_contrastive"])
     tau        = float(cfg["tau"])
     best_val   = float("inf")
+    best_val_top1 = 0.0
     best_ckpt  = os.path.join(cfg["checkpoint_dir"], "tads_x_fp32_best.pt")
     early_stop_counter = 0   
 
@@ -941,7 +948,7 @@ def train(
             for sample in batch:
                 loss, ce_f, nce_f = _train_step(
                     sample, scoring_model, projection, raw_cache,
-                    A, phase, lambda_nce, tau, device
+                    A, phase, lambda_nce, tau, device, epoch=epoch
                 )
                 if loss is None:
                     continue
@@ -974,9 +981,13 @@ def train(
                 scoring_model, projection, raw_cache, A,
                 val_loader, device, phase, lambda_nce, tau,
             )
-            print(f"          Val loss: {val_loss:.4f}")
+            val_top1 = val_top1_accuracy(
+                val_loader, scoring_model, projection, raw_cache, A, device
+            )
+            print(f"          Val loss: {val_loss:.4f} | Val Top-1: {val_top1:.4f}")
 
-            if val_loss < best_val:
+            if val_top1 > best_val_top1:
+                best_val_top1 = val_top1
                 best_val = val_loss
                 torch.save(scoring_model.state_dict(), best_ckpt)
                 print(f"          ✓ New best checkpoint saved → {best_ckpt}")
@@ -984,8 +995,9 @@ def train(
                 early_stop_counter = 0  # reset on improvement
             else:
                 early_stop_counter += 1
-                if early_stop_counter >= 4:   # 4 × val_every_n_epochs = 12 epochs patience
-                    print(f"          Early stopping triggered (no improvement for 4 evals)")
+                # Patience = 4 evaluations × val_every_n_epochs (now 10) = 40 epochs
+                if early_stop_counter >= 4:
+                    print("          Early stopping triggered (no top-1 improvement for 4 evals)")
                     break
 
         # ── Periodic checkpoints ────────────────────────────────────────
