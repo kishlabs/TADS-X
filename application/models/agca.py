@@ -90,7 +90,7 @@ class AGCA(nn.Module):
       score-conditioning path at inference.
     """
 
-    def __init__(self, dim: int = _DIM, mlp_hidden: int = 64) -> None:
+    def __init__(self, dim: int = _DIM, mlp_hidden: int = 32) -> None:
         super().__init__()
         self.dim        = dim
         self.scale      = math.sqrt(dim)       # √256 = 16.0

@@ -14,3 +14,4 @@ application/data/roi_cache_train/
 application/data/roi_cache_val_full/
 data/
 checkpoint/
+application/detections/

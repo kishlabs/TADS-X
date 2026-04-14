@@ -85,7 +85,7 @@ class SCRN(nn.Module):
         self,
         dim:        int = _DIM,
         attn_dim:   int = 64,
-        mlp_hidden: int = 128,
+        mlp_hidden: int = 64,
     ) -> None:
         super().__init__()
         self.dim      = dim

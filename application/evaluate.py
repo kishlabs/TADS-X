@@ -80,7 +80,7 @@ from pipeline import (
     ROI_FEAT_DIM,
     WORKING_DIM,
 )
-
+from PIL import Image, ImageDraw, ImageFont
 
 # ─────────────────────────────────────────────────────────────────────────────
 # IoU helper
@@ -450,6 +450,7 @@ def evaluate(
     iou_thresh:      float = 0.5,
     out_dir:         str  = "results",
     verbose:         bool  = False,
+    draw:            bool = False,
 ) -> Dict:
     """
     Run mAP@0.5 evaluation on COCO-Tasks val2014.
@@ -598,6 +599,7 @@ def evaluate_single(
     thresholds_path: str  = "configs/per_task_thresholds.json",
     yolo_weights:    str  = "yolov8n.pt",
     verbose:         bool = True,
+    draw:            bool = False,
 ) -> dict:
     """
     Run TADS-X on a single image and print result.
@@ -619,6 +621,40 @@ def evaluate_single(
     )
 
     result = model.predict(image_path, task_query, verbose=verbose)
+
+    if draw and "bbox" in result:
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+        except ImportError:
+            print("PIL (Pillow) not installed. Install with: pip install Pillow")
+        else:
+            img = Image.open(image_path)
+            draw = ImageDraw.Draw(img)
+            x, y, w, h = result["bbox"]
+            x1, y1, x2, y2 = int(x), int(y), int(x + w), int(y + h)
+            # Draw rectangle
+            draw.rectangle([x1, y1, x2, y2], outline="green", width=3)
+            # Prepare label
+            label = f"{result['class']} ({result['confidence']:.4f})"
+            try:
+                font = ImageFont.truetype("arial.ttf", 16)
+            except:
+                font = ImageFont.load_default()
+            # Draw text background
+            bbox = draw.textbbox((0, 0), label, font=font)
+            tw = bbox[2] - bbox[0]
+            th = bbox[3] - bbox[1]
+            draw.rectangle([x1, y1 - th - 4, x1 + tw + 4, y1], fill="green")
+            draw.text((x1 + 2, y1 - th - 2), label, fill="white", font=font)
+            # Create output directory if not exists
+            out_dir = "detections"
+            os.makedirs(out_dir, exist_ok=True)
+            # Build output filename: originalname_taskname_detection.jpg
+            base_name = os.path.splitext(os.path.basename(image_path))[0]
+            safe_task = task_query.replace(" ", "_").replace("/", "_")
+            out_path = os.path.join(out_dir, f"{base_name}_{safe_task}_detection.jpg")
+            img.save(out_path)
+            print(f"  Saved annotated image to {out_path}")
 
     print(f"\n  Image : {image_path}")
     print(f"  Task  : {task_query}")
@@ -810,6 +846,8 @@ def main():
     parser.add_argument("--verbose",     action="store_true")
     parser.add_argument("--smoke-test",  action="store_true",
                         help="Offline unit test — no data required")
+
+    parser.add_argument("--draw", action="store_true", help="Draw bounding box on image and save")
     args = parser.parse_args()
 
     if args.smoke_test:
@@ -830,6 +868,7 @@ def main():
             thresholds_path = args.thresholds,
             yolo_weights    = args.yolo,
             verbose         = True,
+            draw            = args.draw,
         )
         return
 
