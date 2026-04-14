@@ -101,7 +101,7 @@ DEFAULT_TRAIN_CONFIG: Dict = {
     "batch_size":           32,
     "learning_rate":        3e-4,
     "optimizer":            "AdamW",
-    "weight_decay":         1e-4,
+    "weight_decay":         5e-3,
     "lambda_contrastive":   0.1,
     "tau":                  0.1,
     "device":               "cuda",
@@ -470,12 +470,49 @@ def collate_fn(batch: List[dict]) -> List[dict]:
     """
     return batch
 
+class TaskBalancedSampler(torch.utils.data.Sampler):
+    """
+    Yields indices such that each epoch samples equally from all 14 tasks.
+    Each task contributes exactly ceil(total_samples / 14) indices per epoch,
+    drawn with replacement if a task has fewer samples than that quota.
+    """
+    def __init__(self, dataset: COCOTasksDataset, samples_per_task: Optional[int] = None):
+        self.task_indices: List[List[int]] = [[] for _ in range(NUM_TASKS)]
+
+        for idx, path in enumerate(dataset.samples):
+            # Extract task file_id from path: .../task_N/sample_*.pt
+            parts = path.replace("\\", "/").split("/")
+            task_dir = [p for p in parts if p.startswith("task_")][-1]
+            file_id = int(task_dir.split("_")[1]) - 1  # 0-based
+            self.task_indices[file_id].append(idx)
+
+        # How many samples per task per epoch
+        max_task = max(len(t) for t in self.task_indices if len(t) > 0)
+        self.n_per_task = samples_per_task or max_task
+        self.n_tasks_active = sum(1 for t in self.task_indices if len(t) > 0)
+
+    def __iter__(self):
+        all_indices = []
+        for task_idx_list in self.task_indices:
+            if not task_idx_list:
+                continue
+            # Sample with replacement to reach quota
+            if len(task_idx_list) >= self.n_per_task:
+                chosen = random.sample(task_idx_list, self.n_per_task)
+            else:
+                chosen = random.choices(task_idx_list, k=self.n_per_task)
+            all_indices.extend(chosen)
+        random.shuffle(all_indices)
+        return iter(all_indices)
+
+    def __len__(self):
+        return self.n_per_task * self.n_tasks_active
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Loss functions  (SRS §9.2)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def cross_entropy_loss(scrn_scores: torch.Tensor, gt_index: int) -> torch.Tensor:
+def cross_entropy_loss(scrn_scores: torch.Tensor, gt_index: int, label_smoothing: float = 0.05) -> torch.Tensor:
     """
     Standard cross-entropy over SCRN scores.
 
@@ -487,7 +524,7 @@ def cross_entropy_loss(scrn_scores: torch.Tensor, gt_index: int) -> torch.Tensor
     """
     gt_idx = torch.tensor([min(gt_index, scrn_scores.shape[0] - 1)],
                           device=scrn_scores.device)
-    return F.cross_entropy(scrn_scores.unsqueeze(0), gt_idx)
+    return F.cross_entropy(scrn_scores.unsqueeze(0), gt_idx, label_smoothing=label_smoothing)
 
 
 def infonce_loss(
@@ -536,6 +573,13 @@ def _train_step(
     Returns: (total_loss, ce_loss_float, nce_loss_float)
     """
     roi_flat       = sample["roi_features"].to(device)   # (N, 6272)
+    # Feature augmentation — train only (no effect at inference; cache stays clean)
+    if scoring_model.training:
+        # 1. Gaussian noise (σ=0.02 — small relative to L2-normalised features)
+        roi_flat = roi_flat + torch.randn_like(roi_flat) * 0.02
+        # 2. Random feature dropout (5% of dimensions zeroed per sample)
+        drop_mask = (torch.rand(roi_flat.shape[1], device=device) > 0.05).float()
+        roi_flat = roi_flat * drop_mask.unsqueeze(0)
     class_ids      = sample["class_ids"]                 # List[int]
     gt_index       = int(sample["gt_index"])
     paper_task_id  = int(sample["paper_task_id"])        # 0-based
@@ -740,11 +784,21 @@ def validate(
             v_prime     = out["v_prime"]
 
             ce = cross_entropy_loss(scrn_scores, gt_index)
+
+            # Task separation loss — must match train objective exactly
+            all_raw = torch.stack([raw_cache[s].to(device) for s in PAPER_TASK_LIST])
+            all_t   = projection(all_raw)
+            all_t_norm = F.normalize(all_t, dim=1)
+            sep_sim    = all_t_norm @ all_t_norm.T
+            sep_labels = torch.arange(14, device=device)
+            task_sep_loss = F.cross_entropy(sep_sim / 0.1, sep_labels)
+            sep_w = 0.05
+
             if phase == 2:
                 nce = infonce_loss(v_prime, t, gt_index, tau)
-                loss = ce + lambda_nce * nce
+                loss = ce + lambda_nce * nce + sep_w * task_sep_loss
             else:
-                loss = ce
+                loss = ce + sep_w * task_sep_loss
 
             total_loss += float(loss.item())
             count += 1
@@ -833,8 +887,10 @@ def train(
     # ── Datasets + loaders ───────────────────────────────────────────────
     train_dataset = COCOTasksDataset(train_cache)
     val_dataset   = COCOTasksDataset(val_cache)
+    train_sampler = TaskBalancedSampler(train_dataset)
     train_loader  = DataLoader(
-        train_dataset, batch_size=cfg["batch_size"], shuffle=True,
+        train_dataset, batch_size=cfg["batch_size"],
+        sampler=train_sampler,
         collate_fn=collate_fn, num_workers=0, drop_last=False,
     )
     val_loader = DataLoader(
@@ -880,6 +936,7 @@ def train(
         for batch in train_loader:
             optimizer.zero_grad()
             batch_count = 0
+            batch_loss_sum = 0.0   # ← NEW: accumulate all sample losses for logging
 
             for sample in batch:
                 loss, ce_f, nce_f = _train_step(
@@ -888,21 +945,22 @@ def train(
                 )
                 if loss is None:
                     continue
-                (loss / len(batch)).backward()      
+                (loss / len(batch)).backward()
                 epoch_ce  += ce_f
                 epoch_nce += nce_f
+                batch_loss_sum += float(loss.item())   # ← NEW: accumulate correctly
                 batch_count += 1
 
             if batch_count > 0:
                 nn.utils.clip_grad_norm_(all_params, max_norm=1.0)
                 optimizer.step()
-                epoch_loss += float(loss.item())
+                epoch_loss += batch_loss_sum / batch_count   # ← FIXED: mean of batch
                 n_samples  += batch_count
 
         scheduler.step()
 
         elapsed = time.time() - t0
-        mean_loss = epoch_loss / max(n_samples / cfg["batch_size"], 1)
+        mean_loss = epoch_loss / max(len(train_loader), 1)   # ← per batch mean
         mean_ce   = epoch_ce   / max(n_samples, 1)
         mean_nce  = epoch_nce  / max(n_samples, 1)
 
