@@ -1,16 +1,42 @@
+## Datasets (too large for version control)
 COCO/
+
+## Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+## Environments
 .env
 .venv
+venv/
+env/
+
+## Training artifacts
 application/tadsx/
 checkpoints/
 checkpoints_test/
+checkpoint/
+data/
+
+## ROI caches
 application/data/
 application/data/roi_cache/
 application/data/roi_cache_test/
 application/data/roi_cache_val/
 application/data/roi_cache_train/
 application/data/roi_cache_val_full/
-data/
-checkpoint/
+
+## Test / evaluation output
+results/
+
+## IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

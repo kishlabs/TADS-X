@@ -1,0 +1,7 @@
+# Dev-only dependencies (not needed for inference)
+# Install with: pip install -r requirements-dev.txt
+
+flake8>=6.0.0
+autopep8>=2.0.0
+pytest>=7.0.0
+pytest-cov>=4.0.0
