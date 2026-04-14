@@ -859,6 +859,7 @@ def train(
     tau        = float(cfg["tau"])
     best_val   = float("inf")
     best_ckpt  = os.path.join(cfg["checkpoint_dir"], "tads_x_fp32_best.pt")
+    early_stop_counter = 0   
 
     # ─────────────────────────────────────────────────────────────────────
     # PHASE 1 — CrossEntropy
@@ -922,12 +923,12 @@ def train(
                 torch.save(scoring_model.state_dict(), best_ckpt)
                 print(f"          ✓ New best checkpoint saved → {best_ckpt}")
 
-            early_stop_counter = 0  # reset on improvement
-        else:
-            early_stop_counter += 1
-            if early_stop_counter >= 4:   # 4 × val_every_n_epochs = 12 epochs patience
-                print(f"          Early stopping triggered (no improvement for 4 evals)")
-                break
+                early_stop_counter = 0  # reset on improvement
+            else:
+                early_stop_counter += 1
+                if early_stop_counter >= 4:   # 4 × val_every_n_epochs = 12 epochs patience
+                    print(f"          Early stopping triggered (no improvement for 4 evals)")
+                    break
 
         # ── Periodic checkpoints ────────────────────────────────────────
         if epoch % int(cfg.get("checkpoint_every", 10)) == 0:
