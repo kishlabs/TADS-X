@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use TADS-X in your research, please cite it as below."
+title: "TADS-X: Task-Aware Dual-Stream Detection with Affordance Gating"
+version: 1.0.0
+date-released: 2026-04-14
+license: MIT
+url: "https://github.com/kishlabs/TADS-X"
+repository-code: "https://github.com/kishlabs/TADS-X"
+abstract: >
+  TADS-X is a goal-oriented object detector that combines a YOLOv8n vision
+  stream with a TinyBERT language stream. Using Task-Conditioned Feature
+  Gating (TCFG), Affordance-Guided Cross-Attention (AGCA), and Scene Context
+  Re-scoring (SCRN), it identifies the single most task-relevant object in a
+  scene for natural-language queries.
+authors:
+  - name: "Team ChipSmiths"
+    affiliation: "kishlabs"
+keywords:
+  - object-detection
+  - affordance
+  - task-driven
+  - vision-language
+  - YOLOv8
+  - TinyBERT
+  - COCO-Tasks
+  - DVCon
+references:
+  - type: article
+    title: "What Object Should I Use? - Task Driven Object Detection"
+    authors:
+      - family-names: Sawatzky
+        given-names: Johann
+    year: 2019
+    url: "https://arxiv.org/abs/1904.09442"

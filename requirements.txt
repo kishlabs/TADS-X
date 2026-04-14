@@ -1,0 +1,10 @@
+# TADS-X Runtime Dependencies
+# Install with: pip install -r requirements.txt
+
+torch>=2.0.0
+torchvision>=0.15.0
+ultralytics>=8.0.0
+transformers>=4.30.0
+numpy>=1.24.0
+scipy>=1.10.0
+pyyaml>=6.0
