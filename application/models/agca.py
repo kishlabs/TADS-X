@@ -104,7 +104,7 @@ class AGCA(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(dim, mlp_hidden, bias=True),
             nn.ReLU(inplace=True),
-            nn.Dropout(p=0.3),
+            nn.Dropout(p=0.2),
             nn.Linear(mlp_hidden, 1, bias=True),
         )
 

@@ -1,7 +1,7 @@
 epochs_phase1: 50
 epochs_phase2: 20
 batch_size: 16
-learning_rate: 0.0003
+learning_rate: 0.00005
 weight_decay: 0.01
 lambda_contrastive: 0.1
 tau: 0.1

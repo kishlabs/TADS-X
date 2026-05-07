@@ -433,7 +433,8 @@ class COCOTasksDataset(Dataset):
     max_per_task : int  cap samples per task (set to None for all)
     """
 
-    def __init__(self, cache_dir: str, max_per_task: Optional[int] = None):
+    def __init__(self, cache_dir: str, max_per_task: Optional[int] = None, split: str = "train"):
+        self.split = split
         self.samples: List[str] = []   # list of .pt file paths
 
         for file_id in range(1, NUM_TASKS + 1):
@@ -459,8 +460,19 @@ class COCOTasksDataset(Dataset):
     def __len__(self) -> int:
         return len(self.samples)
 
+    def augment_roi_features(self, v_i: torch.Tensor) -> torch.Tensor:
+        # Small Gaussian noise
+        v_i = v_i + torch.randn_like(v_i) * 0.015
+        # Random feature dropout — zero 15% of dimensions
+        mask = (torch.rand_like(v_i) > 0.15).float()
+        v_i = v_i * mask
+        return v_i
+
     def __getitem__(self, idx: int) -> dict:
-        return torch.load(self.samples[idx], weights_only=True)
+        sample = torch.load(self.samples[idx], weights_only=True)
+        if self.split == 'train':
+            sample['roi_features'] = self.augment_roi_features(sample['roi_features'])
+        return sample
 
 
 def collate_fn(batch: List[dict]) -> List[dict]:
@@ -538,12 +550,7 @@ def _train_step(
     Returns: (total_loss, ce_loss_float, nce_loss_float)
     """
     roi_flat       = sample["roi_features"].to(device)   # (N, 6272)
-    # Feature augmentation — train only (no effect at inference; cache stays clean)
-    if scoring_model.training and epoch > 10:
-        # Apply augmentation only after epoch 10, with reduced noise
-        roi_flat = roi_flat + torch.randn_like(roi_flat) * 0.01
-        drop_mask = (torch.rand(roi_flat.shape[1], device=device) > 0.03).float()
-        roi_flat = roi_flat * drop_mask.unsqueeze(0)
+
     class_ids      = sample["class_ids"]                 # List[int]
     gt_index       = int(sample["gt_index"])
     paper_task_id  = int(sample["paper_task_id"])        # 0-based
@@ -693,7 +700,7 @@ def calibrate_thresholds(
             precision = tp / (tp + fp_count + 1e-9)
             f1        = 2 * precision * recall / (precision + recall + 1e-9)
 
-            if recall >= 0.90 and f1 > best_f1:
+            if recall >= 0.99 and f1 > best_f1:
                 best_f1    = f1
                 best_theta = θ
 
@@ -873,8 +880,8 @@ def train(
     print(f"  TaskProjection params: {n_proj:,}")
 
     # ── Datasets + loaders ───────────────────────────────────────────────
-    train_dataset = COCOTasksDataset(train_cache)
-    val_dataset   = COCOTasksDataset(val_cache)
+    train_dataset = COCOTasksDataset(train_cache, split="train")
+    val_dataset   = COCOTasksDataset(val_cache, split="val")
 
     from torch.utils.data import WeightedRandomSampler
 
@@ -906,11 +913,10 @@ def train(
 
     # ── Optimizer ─────────────────────────────────────────────────────────
     all_params = list(scoring_model.parameters()) + list(projection.parameters())
-    optimizer  = torch.optim.AdamW(
-        all_params,
-        lr           = float(cfg["learning_rate"]),
-        weight_decay = float(cfg["weight_decay"]),
-    )
+    optimizer  = torch.optim.AdamW([
+        {"params": scoring_model.parameters(), "weight_decay": 5e-3},
+        {"params": projection.parameters(), "weight_decay": 1e-2}
+    ], lr=float(cfg["learning_rate"]))
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
         T_max = int(cfg["epochs_phase1"]) + int(cfg["epochs_phase2"]),
@@ -931,6 +937,30 @@ def train(
 
     for epoch in range(1, total_epochs + 1):
         phase = 1 if epoch <= int(cfg["epochs_phase1"]) else 2
+        
+        if phase == 2 and epoch == int(cfg["epochs_phase1"]) + 1:
+            print("  Loading Phase 1 best checkpoint for Phase 2...")
+            ckpt = torch.load('checkpoints/tads_x_fp32_best.pt', map_location=device)
+            if 'scoring_model' in ckpt:
+                scoring_model.load_state_dict(ckpt['scoring_model'])
+                projection.load_state_dict(ckpt['projection'])
+            else:
+                scoring_model.load_state_dict(ckpt)
+
+            # Reset optimizer and scheduler for Phase 2
+            optimizer = torch.optim.AdamW([
+                {"params": scoring_model.parameters(), "weight_decay": 5e-3},
+                {"params": projection.parameters(),    "weight_decay": 1e-2}
+            ], lr=float(cfg["learning_rate"]) * 0.5)   # Phase 2 at half LR (2.5e-5)
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                optimizer,
+                T_max  = int(cfg["epochs_phase2"]),
+                eta_min = 1e-6,
+            )
+            all_params = list(scoring_model.parameters()) + list(projection.parameters())
+            early_stop_counter = 0   # reset patience counter for Phase 2
+            print("  Optimizer, scheduler and early stopping reset for Phase 2.")
+
         scoring_model.train()
         projection.train()
 
@@ -989,8 +1019,13 @@ def train(
             if val_top1 > best_val_top1:
                 best_val_top1 = val_top1
                 best_val = val_loss
-                torch.save(scoring_model.state_dict(), best_ckpt)
-                print(f"          ✓ New best checkpoint saved → {best_ckpt}")
+                
+                ckpt_to_save = best_ckpt if phase == 1 else os.path.join(cfg["checkpoint_dir"], "tads_x_fp32_phase2_best.pt")
+                torch.save({
+                    'scoring_model': scoring_model.state_dict(),
+                    'projection': projection.state_dict()
+                }, ckpt_to_save)
+                print(f"          ✓ New best checkpoint saved → {ckpt_to_save}")
 
                 early_stop_counter = 0  # reset on improvement
             else:
@@ -1004,7 +1039,10 @@ def train(
         if epoch % int(cfg.get("checkpoint_every", 10)) == 0:
             ckpt = os.path.join(cfg["checkpoint_dir"],
                                 f"tads_x_fp32_epoch_{epoch}.pt")
-            torch.save(scoring_model.state_dict(), ckpt)
+            torch.save({
+                'scoring_model': scoring_model.state_dict(),
+                'projection': projection.state_dict()
+            }, ckpt)
 
     # ─────────────────────────────────────────────────────────────────────
     # Save trained projection weights
@@ -1021,14 +1059,22 @@ def train(
     scoring_model.eval()
     projection.eval()
 
-    # Load best weights for calibration
+    # After training loop ends — determine the real best checkpoint
+    phase2_ckpt = os.path.join(cfg["checkpoint_dir"], "tads_x_fp32_phase2_best.pt")
+    calibration_ckpt = phase2_ckpt if os.path.exists(phase2_ckpt) else best_ckpt
+    print(f"\n  Calibrating thresholds using: {calibration_ckpt}")
+
     scoring_best = ScoringModel().to(device)
     try:
-        scoring_best.load_state_dict(
-            torch.load(best_ckpt, map_location=device, weights_only=True)
-        )
+        ckpt_data = torch.load(calibration_ckpt, map_location=device, weights_only=True)
     except TypeError:
-        scoring_best.load_state_dict(torch.load(best_ckpt, map_location=device))
+        ckpt_data = torch.load(calibration_ckpt, map_location=device)
+
+    if isinstance(ckpt_data, dict) and 'scoring_model' in ckpt_data:
+        scoring_best.load_state_dict(ckpt_data['scoring_model'])
+        projection.load_state_dict(ckpt_data['projection'])
+    else:
+        scoring_best.load_state_dict(ckpt_data)
     scoring_best.eval()
 
     thresholds = calibrate_thresholds(
@@ -1051,7 +1097,7 @@ def train(
     print(f"    python evaluate.py \\")
     print(f"        --coco-dir  <COCO_DIR> \\")
     print(f"        --tasks-dir <COCO_TASKS_DIR> \\")
-    print(f"        --checkpoint {best_ckpt}")
+    print(f"        --checkpoint {calibration_ckpt}")
     print(f"{'='*60}\n")
 
 

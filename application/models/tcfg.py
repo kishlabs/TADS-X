@@ -71,6 +71,7 @@ class TCFG(nn.Module):
         self.dim = dim
         # W_g ∈ R^{dim×dim} — single linear layer, no activation yet
         self.gate_linear = nn.Linear(dim, dim, bias=True)
+        self.dropout = nn.Dropout(p=0.3)
         nn.init.xavier_uniform_(self.gate_linear.weight)
         nn.init.zeros_(self.gate_linear.bias)
 
@@ -96,7 +97,7 @@ class TCFG(nn.Module):
         )
 
         # --- gate computation (once per image) ---
-        g = torch.sigmoid(self.gate_linear(t))     # (dim,)
+        g = torch.sigmoid(self.dropout(self.gate_linear(t)))     # (dim,)
 
         # --- element-wise modulation (broadcast over N proposals) ---
         v_prime = v_i * g.unsqueeze(0)             # (N, dim) * (1, dim) → (N, dim)

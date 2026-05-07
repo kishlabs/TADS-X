@@ -101,7 +101,7 @@ class SCRN(nn.Module):
         self.mlp2 = nn.Sequential(
             nn.Linear(self.h_dim * 2, mlp_hidden, bias=True),
             nn.ReLU(inplace=True),
-            nn.Dropout(p=0.3),
+            nn.Dropout(p=0.2),
             nn.Linear(mlp_hidden, 1, bias=True),
         )
 
