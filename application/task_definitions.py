@@ -95,11 +95,11 @@ _APPROX_PAPER_TO_SRS = {
     7:  5,   # "dig hole"                 → "dig a hole with"
     8:  None,# "open bottle of beer"      → no clean SRS match
     9:  3,   # "open parcel"              → "cut something with"
-    10: 1,   # "serve wine"              → "serve wine"
-    11: 2,   # "pour sugar"              → "pour water into"
-    12: 6,   # "smear butter"            → "scoop something with"
-    13: 8,   # "extinguish fire"         → "cool something in"
-    14: 7,   # "pound carpet"            → "pound something with"
+    10: 1,   # "serve wine"               → "serve wine"
+    11: 2,   # "pour sugar"               → "pour water into"
+    12: 6,   # "smear butter"             → "scoop something with"
+    13: 8,   # "extinguish fire"          → "cool something in"
+    14: 7,   # "pound carpet"             → "pound something with"
 }
 # fmt: on
 

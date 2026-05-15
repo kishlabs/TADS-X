@@ -1,0 +1,167 @@
+(tadsx) PS E:\DVCon\application> python train.py --coco-dir E:\DVCon\COCO --tasks-dir E:\DVCon\COCO\dataset-master\coco-tasks\annotations --cache-dir data/roi_cache --config configs/train_config.yaml
+
+============================================================
+  TADS-X Training
+  Device     : cuda
+  Phase 1    : 50 epochs  (CrossEntropy)
+  Phase 2    : 20 epochs  (CE + InfoNCE)
+  Batch size : 16
+  LR         : 5e-05
+============================================================
+
+  Affordance matrix loaded: torch.Size([14, 80])
+  Raw embedding cache: 27 entries
+  ScoringModel params : 1,942,466
+  TaskProjection params: 80,128
+  Dataset: 14087 samples from data/roi_cache\train
+  Dataset: 3323 samples from data/roi_cache\val
+  Epoch   1/70 | Phase 1 | Loss=0.6722  CE=0.6724  NCE=2.1985 | lr=5.00e-05 | 564.4s
+  Epoch   2/70 | Phase 1 | Loss=0.6283  CE=0.6283  NCE=2.4241 | lr=4.99e-05 | 398.1s
+  Epoch   3/70 | Phase 1 | Loss=0.5939  CE=0.5941  NCE=2.4670 | lr=4.98e-05 | 389.1s
+  Epoch   4/70 | Phase 1 | Loss=0.5769  CE=0.5770  NCE=2.4429 | lr=4.96e-05 | 353.3s
+  Epoch   5/70 | Phase 1 | Loss=0.5548  CE=0.5548  NCE=2.3913 | lr=4.94e-05 | 348.0s
+  Epoch   6/70 | Phase 1 | Loss=0.6141  CE=0.5477  NCE=1.3313 | lr=4.91e-05 | 335.9s
+  Epoch   7/70 | Phase 1 | Loss=0.5285  CE=0.5177  NCE=0.2186 | lr=4.88e-05 | 330.3s
+  Epoch   8/70 | Phase 1 | Loss=0.5268  CE=0.5205  NCE=0.1247 | lr=4.84e-05 | 247.1s
+  Epoch   9/70 | Phase 1 | Loss=0.5006  CE=0.4959  NCE=0.0895 | lr=4.80e-05 | 82.1s
+  Epoch  10/70 | Phase 1 | Loss=0.4928  CE=0.4892  NCE=0.0751 | lr=4.76e-05 | 81.0s
+          Val loss: 0.6615 | Val Top-1: 0.7057
+          ✓ New best checkpoint saved → checkpoints\tads_x_fp32_best.pt
+  Epoch  11/70 | Phase 1 | Loss=0.4667  CE=0.4635  NCE=0.0692 | lr=4.71e-05 | 81.5s
+  Epoch  12/70 | Phase 1 | Loss=0.4637  CE=0.4603  NCE=0.0656 | lr=4.65e-05 | 215.2s
+  Epoch  13/70 | Phase 1 | Loss=0.4522  CE=0.4491  NCE=0.0613 | lr=4.59e-05 | 168.0s
+  Epoch  14/70 | Phase 1 | Loss=0.4380  CE=0.4345  NCE=0.0679 | lr=4.53e-05 | 122.9s
+  Epoch  15/70 | Phase 1 | Loss=0.4177  CE=0.4144  NCE=0.0645 | lr=4.47e-05 | 99.9s
+  Epoch  16/70 | Phase 1 | Loss=0.4222  CE=0.4194  NCE=0.0582 | lr=4.40e-05 | 98.2s
+  Epoch  17/70 | Phase 1 | Loss=0.4032  CE=0.4002  NCE=0.0603 | lr=4.32e-05 | 83.5s
+  Epoch  18/70 | Phase 1 | Loss=0.3873  CE=0.3844  NCE=0.0586 | lr=4.24e-05 | 85.2s
+  Epoch  19/70 | Phase 1 | Loss=0.3802  CE=0.3773  NCE=0.0610 | lr=4.16e-05 | 84.0s
+  Epoch  20/70 | Phase 1 | Loss=0.3669  CE=0.3637  NCE=0.0561 | lr=4.08e-05 | 82.2s
+          Val loss: 0.7378 | Val Top-1: 0.7111
+          ✓ New best checkpoint saved → checkpoints\tads_x_fp32_best.pt
+  Epoch  21/70 | Phase 1 | Loss=0.3669  CE=0.3643  NCE=0.0527 | lr=3.99e-05 | 83.2s
+  Epoch  22/70 | Phase 1 | Loss=0.3431  CE=0.3407  NCE=0.0511 | lr=3.90e-05 | 79.6s
+  Epoch  23/70 | Phase 1 | Loss=0.3389  CE=0.3362  NCE=0.0532 | lr=3.81e-05 | 86.4s
+  Epoch  24/70 | Phase 1 | Loss=0.3311  CE=0.3285  NCE=0.0500 | lr=3.71e-05 | 98.1s
+  Epoch  25/70 | Phase 1 | Loss=0.3236  CE=0.3213  NCE=0.0461 | lr=3.61e-05 | 86.8s
+  Epoch  26/70 | Phase 1 | Loss=0.3191  CE=0.3167  NCE=0.0437 | lr=3.51e-05 | 103.3s
+  Epoch  27/70 | Phase 1 | Loss=0.3138  CE=0.3118  NCE=0.0431 | lr=3.41e-05 | 101.6s
+  Epoch  28/70 | Phase 1 | Loss=0.3108  CE=0.3088  NCE=0.0400 | lr=3.31e-05 | 151.4s
+  Epoch  29/70 | Phase 1 | Loss=0.3121  CE=0.3100  NCE=0.0409 | lr=3.20e-05 | 320.2s
+  Epoch  30/70 | Phase 1 | Loss=0.3092  CE=0.3075  NCE=0.0375 | lr=3.10e-05 | 265.1s
+          Val loss: 0.8012 | Val Top-1: 0.7105
+  Epoch  31/70 | Phase 1 | Loss=0.2941  CE=0.2925  NCE=0.0344 | lr=2.99e-05 | 86.7s
+  Epoch  32/70 | Phase 1 | Loss=0.2882  CE=0.2865  NCE=0.0345 | lr=2.88e-05 | 79.5s
+  Epoch  33/70 | Phase 1 | Loss=0.2925  CE=0.2907  NCE=0.0345 | lr=2.77e-05 | 80.2s
+  Epoch  34/70 | Phase 1 | Loss=0.2847  CE=0.2832  NCE=0.0328 | lr=2.66e-05 | 82.2s
+  Epoch  35/70 | Phase 1 | Loss=0.2789  CE=0.2770  NCE=0.0338 | lr=2.55e-05 | 88.0s
+  Epoch  36/70 | Phase 1 | Loss=0.2752  CE=0.2734  NCE=0.0324 | lr=2.44e-05 | 89.7s
+  Epoch  37/70 | Phase 1 | Loss=0.2701  CE=0.2686  NCE=0.0316 | lr=2.33e-05 | 88.6s
+  Epoch  38/70 | Phase 1 | Loss=0.2651  CE=0.2637  NCE=0.0313 | lr=2.22e-05 | 87.9s
+  Epoch  39/70 | Phase 1 | Loss=0.2647  CE=0.2632  NCE=0.0305 | lr=2.11e-05 | 89.9s
+  Epoch  40/70 | Phase 1 | Loss=0.2653  CE=0.2640  NCE=0.0295 | lr=2.00e-05 | 82.3s
+          Val loss: 0.8745 | Val Top-1: 0.7078
+  Epoch  41/70 | Phase 1 | Loss=0.2683  CE=0.2667  NCE=0.0309 | lr=1.90e-05 | 78.9s
+  Epoch  42/70 | Phase 1 | Loss=0.2610  CE=0.2593  NCE=0.0310 | lr=1.79e-05 | 84.3s
+  Epoch  43/70 | Phase 1 | Loss=0.2486  CE=0.2472  NCE=0.0289 | lr=1.69e-05 | 82.0s
+  Epoch  44/70 | Phase 1 | Loss=0.2540  CE=0.2527  NCE=0.0280 | lr=1.59e-05 | 88.8s
+  Epoch  45/70 | Phase 1 | Loss=0.2488  CE=0.2474  NCE=0.0286 | lr=1.49e-05 | 95.7s
+  Epoch  46/70 | Phase 1 | Loss=0.2467  CE=0.2453  NCE=0.0269 | lr=1.39e-05 | 91.1s
+  Epoch  47/70 | Phase 1 | Loss=0.2510  CE=0.2497  NCE=0.0268 | lr=1.29e-05 | 93.7s
+  Epoch  48/70 | Phase 1 | Loss=0.2512  CE=0.2501  NCE=0.0244 | lr=1.20e-05 | 94.9s
+  Epoch  49/70 | Phase 1 | Loss=0.2442  CE=0.2431  NCE=0.0252 | lr=1.11e-05 | 90.6s
+  Epoch  50/70 | Phase 1 | Loss=0.2423  CE=0.2410  NCE=0.0258 | lr=1.02e-05 | 87.3s
+          Val loss: 0.8718 | Val Top-1: 0.7126
+          ✓ New best checkpoint saved → checkpoints\tads_x_fp32_best.pt
+  Loading Phase 1 best checkpoint for Phase 2...
+  Optimizer, scheduler and early stopping reset for Phase 2.
+  Epoch  51/70 | Phase 2 | Loss=0.3047  CE=0.2405  NCE=0.6283 | lr=2.49e-05 | 94.5s
+  Epoch  52/70 | Phase 2 | Loss=0.3005  CE=0.2423  NCE=0.5594 | lr=2.44e-05 | 96.4s
+  Epoch  53/70 | Phase 2 | Loss=0.2990  CE=0.2429  NCE=0.5367 | lr=2.37e-05 | 103.1s
+  Epoch  54/70 | Phase 2 | Loss=0.2971  CE=0.2416  NCE=0.5267 | lr=2.27e-05 | 108.6s
+  Epoch  55/70 | Phase 2 | Loss=0.2944  CE=0.2406  NCE=0.5104 | lr=2.15e-05 | 111.2s
+  Epoch  56/70 | Phase 2 | Loss=0.2908  CE=0.2373  NCE=0.5037 | lr=2.01e-05 | 105.9s
+  Epoch  57/70 | Phase 2 | Loss=0.2870  CE=0.2352  NCE=0.4920 | lr=1.84e-05 | 109.8s
+  Epoch  58/70 | Phase 2 | Loss=0.2859  CE=0.2348  NCE=0.4862 | lr=1.67e-05 | 96.1s
+  Epoch  59/70 | Phase 2 | Loss=0.2802  CE=0.2296  NCE=0.4812 | lr=1.49e-05 | 93.0s
+  Epoch  60/70 | Phase 2 | Loss=0.2811  CE=0.2305  NCE=0.4808 | lr=1.30e-05 | 95.9s
+          Val loss: 0.9629 | Val Top-1: 0.7099
+  Epoch  61/70 | Phase 2 | Loss=0.2784  CE=0.2283  NCE=0.4758 | lr=1.11e-05 | 87.6s
+  Epoch  62/70 | Phase 2 | Loss=0.2798  CE=0.2300  NCE=0.4735 | lr=9.29e-06 | 97.3s
+  Epoch  63/70 | Phase 2 | Loss=0.2790  CE=0.2292  NCE=0.4733 | lr=7.55e-06 | 89.8s
+  Epoch  64/70 | Phase 2 | Loss=0.2736  CE=0.2245  NCE=0.4663 | lr=5.95e-06 | 91.4s
+  Epoch  65/70 | Phase 2 | Loss=0.2734  CE=0.2249  NCE=0.4619 | lr=4.51e-06 | 94.3s
+  Epoch  66/70 | Phase 2 | Loss=0.2692  CE=0.2204  NCE=0.4647 | lr=3.29e-06 | 88.8s
+  Epoch  67/70 | Phase 2 | Loss=0.2687  CE=0.2202  NCE=0.4612 | lr=2.31e-06 | 98.4s
+  Epoch  68/70 | Phase 2 | Loss=0.2649  CE=0.2170  NCE=0.4556 | lr=1.59e-06 | 89.7s
+  Epoch  69/70 | Phase 2 | Loss=0.2663  CE=0.2184  NCE=0.4547 | lr=1.15e-06 | 89.2s
+  Epoch  70/70 | Phase 2 | Loss=0.2546  CE=0.2071  NCE=0.4486 | lr=1.00e-06 | 97.2s
+          Val loss: 0.9685 | Val Top-1: 0.7105
+
+  ✓ Trained projection saved → data\projection_layer_trained.pt
+  ✓ Best checkpoint        → checkpoints\tads_x_fp32_best.pt
+
+  Calibrating per-task thresholds on val2014...
+
+  Calibrating thresholds using: checkpoints\tads_x_fp32_phase2_best.pt
+  Task  1 (step on something to reach top of a shelf   ): θ_t=0.15  F1=0.8168  n=282
+  Task  2 (sit comfortably                             ): θ_t=0.20  F1=0.7596  n=390
+  Task  3 (place flowers                               ): θ_t=0.26  F1=0.7709  n=235
+  Task  4 (get potatoes out of fire                    ): θ_t=0.10  F1=0.8442  n=371
+  Task  5 (water plant                                 ): θ_t=0.30  F1=0.8051  n=286
+  Task  6 (get lemon out of tea                        ): θ_t=0.10  F1=0.8606  n=143
+  Task  7 (dig hole                                    ): θ_t=0.17  F1=0.8496  n=395
+  Task  8 (open bottle of beer                         ): θ_t=0.10  F1=0.8571  n=72
+  Task  9 (open parcel                                 ): θ_t=0.38  F1=0.9174  n=62
+  Task 10 (serve wine                                  ): θ_t=0.10  F1=0.8113  n=189
+  Task 11 (pour sugar                                  ): θ_t=0.20  F1=0.7793  n=230
+  Task 12 (smear butter                                ): θ_t=0.37  F1=0.9197  n=75
+  Task 13 (extinguish fire                             ): θ_t=0.22  F1=0.8073  n=132
+  Task 14 (pound carpet                                ): θ_t=0.19  F1=0.8677  n=461
+  ✓ Per-task thresholds saved → configs/per_task_thresholds.json
+
+============================================================
+  Training complete.
+  Best val loss : 0.8718
+  Checkpoints   : checkpoints/
+  Threshold file: configs/per_task_thresholds.json
+
+  Next step:
+    python evaluate.py \
+        --coco-dir  <COCO_DIR> \
+        --tasks-dir <COCO_TASKS_DIR> \
+        --checkpoint checkpoints\tads_x_fp32_phase2_best.pt
+============================================================
+
+(tadsx) PS E:\DVCon\application>  python evaluate.py --coco-dir E:\DVCon\COCO --tasks-dir E:\DVCon\COCO\dataset-master\coco-tasks\annotations --checkpoint checkpoints\tads_x_fp32_phase2_best.pt
+
+============================================================
+  TADS-X Evaluation  [Full TADS-X]  [full val2014]
+  IoU threshold: 0.5
+============================================================
+
+  Loading COCO instances annotations...
+  Done in 3.8s  (291,875 annotations)
+
+  Task  Query                    AP@0.5   Preds      GT
+  ------------------------------------------------------------
+     1  step on something to reach top of a shelf   0.4131     486     486
+     2  sit comfortably          0.3635     660     660
+     3  place flowers            0.3701     411     411
+     4  get potatoes out of fire   0.4342     639     639
+     5  water plant              0.4734     455     455
+     6  get lemon out of tea     0.1784     438     438
+     7  dig hole                 0.4545     640     640
+     8  open bottle of beer      0.2773     153     153
+     9  open parcel              0.2328     207     207
+    10  serve wine               0.5280     316     316
+    11  pour sugar               0.2458     550     550
+    12  smear butter             0.2401     248     248
+    13  extinguish fire          0.3524     260     260
+    14  pound carpet             0.4779     710     710
+
+  ────────────────────────────────────────────────────────────
+  Overall mAP@0.5                 0.3601
+  ────────────────────────────────────────────────────────────
+
+  ✓ Results saved → results\map_per_task.json

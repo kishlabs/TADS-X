@@ -59,8 +59,6 @@ import torch.nn.functional as F
 
 from task_definitions import (
     PAPER_TASKS,
-    SRS_TASKS,
-    SRS_TASK_LIST,
     COCO_ID_TO_IDX,
     IDX_TO_CLASS,
     NUM_TASKS,
@@ -72,7 +70,6 @@ from pipeline import (
     TADSX,
     predict,
     load_yolo,
-    resolve_task_id,
     TOP_K_INFER,
     PRUNE_THRESH,
     YOLO_IMGSZ,
@@ -207,12 +204,13 @@ def _load_gt_for_task(
     with open(coco_instances_path, "r", encoding="utf-8") as f:
         coco_data = json.load(f)
 
-    # Build lookup: (image_id, coco_category_id) → bbox [x,y,w,h]
-    bbox_lookup: Dict[Tuple[int, int], List] = {}
+    # Build lookup: (image_id, coco_category_id) → list of bbox [x,y,w,h]
+    bbox_lookup: Dict[Tuple[int, int], List[List]] = {}
     for ann in coco_data.get("annotations", []):
         key = (int(ann["image_id"]), int(ann["category_id"]))
         if key not in bbox_lookup:
-            bbox_lookup[key] = ann["bbox"]   # [x, y, w, h]
+            bbox_lookup[key] = []
+        bbox_lookup[key].append(ann["bbox"])
 
     gt: Dict[int, dict] = {}
     for a in preferred:
@@ -224,12 +222,12 @@ def _load_gt_for_task(
         coco_id = int(coco_id)
 
         key = (img_id, coco_id)
-        bbox_list = bbox_lookup.get(key)
-        if bbox_list is None:
+        bbox_lists = bbox_lookup.get(key)
+        if not bbox_lists:
             continue
 
         gt[img_id] = {
-            "bbox_xywh": tuple(bbox_list),
+            "bbox_xywh_list": [tuple(b) for b in bbox_lists],
             "coco_cat_id": coco_id,
         }
 
@@ -343,6 +341,8 @@ def _evaluate_task(
     subset:              Optional[int],
     iou_thresh:          float = 0.5,
     verbose:             bool  = False,
+    yolo_conf:           float = 0.25,
+    prune_thresh:        float = 0.0,
     img_subdir:          str   = "val2014",
 ) -> Tuple[float, int, int]:
     """
@@ -364,7 +364,7 @@ def _evaluate_task(
 
     for img_id in image_ids:
         gt_info  = gt_annotations[img_id]
-        gt_bbox  = gt_info["bbox_xywh"]
+        gt_bbox_list = gt_info["bbox_xywh_list"]
 
         fname    = f"COCO_{img_subdir}_{img_id:012d}.jpg"
         img_path = os.path.join(img_dir, fname)
@@ -374,7 +374,7 @@ def _evaluate_task(
         try:
             if baseline is None:
                 # Full TADS-X pipeline
-                result = model.predict(img_path, srs_task_query, verbose=verbose)
+                result = model.predict(img_path, srs_task_query, verbose=verbose, yolo_conf=yolo_conf, prune_thresh=prune_thresh)
                 if "bbox" not in result:
                     # no-match → FP entry with confidence 0
                     predictions.append((0.0, 0))
@@ -385,7 +385,7 @@ def _evaluate_task(
             else:
                 # Baselines — run YOLO manually then apply baseline logic
                 yolo_results = model.yolo_model(
-                    img_path, imgsz=YOLO_IMGSZ, conf=0.25, device="cpu", verbose=False
+                    img_path, imgsz=YOLO_IMGSZ, conf=yolo_conf, device="cpu", verbose=False
                 )
                 result_boxes = yolo_results[0].boxes
 
@@ -410,8 +410,8 @@ def _evaluate_task(
                     predictions.append((0.0, 0))
                     continue
 
-            iou = _iou_xywh(pred_bbox, gt_bbox)
-            is_tp = 1 if iou >= iou_thresh else 0
+            max_iou = max([_iou_xywh(pred_bbox, b) for b in gt_bbox_list])
+            is_tp = 1 if max_iou >= iou_thresh else 0
             predictions.append((float(confidence), is_tp))
 
         except FileNotFoundError as e:
@@ -444,7 +444,9 @@ def evaluate(
     proj_path:       str  = "data/projection_layer_trained.pt",
     affordance_path: str  = "data/affordance_matrix.npy",
     thresholds_path: str  = "configs/per_task_thresholds.json",
-    yolo_weights:    str  = "yolov8n.pt",
+    yolo_weights:    str  = "yolov8s.pt",
+    yolo_conf:       float = 0.25,
+    prune_thresh:    float = 0.0,
     baseline:        Optional[str] = None,
     subset:          Optional[int] = None,
     iou_thresh:      float = 0.5,
@@ -483,6 +485,7 @@ def evaluate(
     subset_str = f"subset={subset}" if subset else "full val2014"
     print(f"  TADS-X Evaluation  [{mode_str}]  [{subset_str}]")
     print(f"  IoU threshold: {iou_thresh}")
+    print(f"  Inference settings: yolo_conf={yolo_conf}, prune_thresh={prune_thresh}")
     print(f"{'='*60}\n")
 
     # ── Load shared artefacts ─────────────────────────────────────────────
@@ -495,8 +498,6 @@ def evaluate(
         print(f"  [WARN] Trained projection not found ({proj_path}), "
               f"using init weights: {fallback}")
         proj_path = fallback
-
-    proj_cache, _ = load_projected_embeddings(raw_emb_path, proj_path, "cpu")
 
     # Build TADSX model (needed for both full and baselines — baselines still use YOLO)
     model = TADSX.from_checkpoint(
@@ -518,47 +519,39 @@ def evaluate(
     print(f"  Done in {time.time()-t0:.1f}s  "
           f"({len(_coco_instances['annotations']):,} annotations)")
 
-    # ── Evaluate each of the 14 SRS tasks ────────────────────────────────
+    # ── Evaluate each of the 14 paper tasks ──────────────────────────────
     ap_per_task: Dict[str, float] = {}
     results_table: List[Tuple[int, str, float, int, int]] = []
 
     print(f"\n  {'Task':<4}  {'Query':<22}  {'AP@0.5':>7}  {'Preds':>6}  {'GT':>6}")
     print(f"  {'-'*60}")
 
-    for srs_id, srs_query in SRS_TASKS.items():
-        # Resolve SRS task → paper task for affordance matrix lookup
-        try:
-            resolution = resolve_task_id(srs_query, proj_cache)
-            paper_task_id_0 = resolution.paper_task_id   # 0-based
-            paper_task_id_1 = resolution.paper_task_id_1 # 1-based (file ID)
-        except KeyError:
-            print(f"  [SKIP] Task {srs_id} ({srs_query}): embedding not in cache")
-            ap_per_task[srs_query] = 0.0
-            continue
-
-        # Load GT annotations (uses paper task file number)
-        gt = _load_gt_for_task(tasks_dir, paper_task_id_1, coco_anns, split="val")
+    for task_id_1, task_query in PAPER_TASKS.items():
+        paper_task_id_0 = task_id_1 - 1  # 0-based affordance row index
+        gt = _load_gt_for_task(tasks_dir, task_id_1, coco_anns, split="val")
 
         ap, n_pred, n_gt = _evaluate_task(
-            srs_task_id     = srs_id,
-            srs_task_query  = srs_query,
+            srs_task_id     = task_id_1,
+            srs_task_query  = task_query,
             gt_annotations  = gt,
             img_dir         = img_dir,
             model           = model,
             baseline        = baseline,
             A               = A,
-            projected_cache = proj_cache,
+            projected_cache = model.projected_cache,
             paper_task_id   = paper_task_id_0,
             subset          = subset,
             iou_thresh      = iou_thresh,
             verbose         = verbose,
+            yolo_conf       = yolo_conf,
+            prune_thresh    = prune_thresh,
         )
 
-        key = f"task_{srs_id}_{srs_query.replace(' ', '_')}"
+        key = f"task_{task_id_1}_{task_query.replace(' ', '_')}"
         ap_per_task[key] = ap
-        results_table.append((srs_id, srs_query, ap, n_pred, n_gt))
+        results_table.append((task_id_1, task_query, ap, n_pred, n_gt))
 
-        print(f"  {srs_id:>4}  {srs_query:<22}  {ap:>7.4f}  {n_pred:>6}  {n_gt:>6}")
+        print(f"  {task_id_1:>4}  {task_query:<22}  {ap:>7.4f}  {n_pred:>6}  {n_gt:>6}")
 
     # ── Summary ───────────────────────────────────────────────────────────
     valid_aps = [v for v in ap_per_task.values() if isinstance(v, float)]
@@ -597,9 +590,10 @@ def evaluate_single(
     proj_path:       str  = "data/projection_layer_trained.pt",
     affordance_path: str  = "data/affordance_matrix.npy",
     thresholds_path: str  = "configs/per_task_thresholds.json",
-    yolo_weights:    str  = "yolov8n.pt",
+    yolo_weights:    str  = "yolov8s.pt",
     verbose:         bool = True,
     draw:            bool = False,
+    prune_thresh:    float = 0.0,
 ) -> dict:
     """
     Run TADS-X on a single image and print result.
@@ -620,7 +614,7 @@ def evaluate_single(
         device            = "cpu",
     )
 
-    result = model.predict(image_path, task_query, verbose=verbose)
+    result = model.predict(image_path, task_query, verbose=verbose, prune_thresh=prune_thresh)
 
     if draw and "bbox" in result:
         try:
@@ -682,6 +676,7 @@ def run_ablation(
     proj_path:       str,
     affordance_path: str,
     yolo_weights:    str,
+    yolo_conf:       float,
     subset:          Optional[int],
     out_dir:         str,
 ) -> None:
@@ -707,6 +702,7 @@ def run_ablation(
         proj_path       = proj_path,
         affordance_path = affordance_path,
         yolo_weights    = yolo_weights,
+        yolo_conf       = yolo_conf,
         subset          = subset,
         out_dir         = out_dir,
     )
@@ -823,7 +819,11 @@ def main():
                         default="data/projection_layer_trained.pt")
     parser.add_argument("--thresholds",  type=str,
                         default="configs/per_task_thresholds.json")
-    parser.add_argument("--yolo",        type=str, default="yolov8n.pt")
+    parser.add_argument("--yolo",        type=str, default="yolov8s.pt")
+    parser.add_argument("--yolo-conf",   type=float, default=0.25,
+                        help="YOLO detection confidence threshold used during evaluation")
+    parser.add_argument("--prune-thresh", type=float, default=0.0,
+                        help="Affordance pruning threshold (default: 0.0)")
     parser.add_argument("--out-dir",     type=str, default="results")
 
     # Eval modes
@@ -884,6 +884,8 @@ def main():
         proj_path       = args.proj_path,
         affordance_path = args.affordance,
         yolo_weights    = args.yolo,
+        yolo_conf       = args.yolo_conf,
+        prune_thresh    = args.prune_thresh,
         subset          = args.subset,
         out_dir         = args.out_dir,
     )

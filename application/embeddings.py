@@ -198,7 +198,7 @@ def load_projected_embeddings(
     with torch.no_grad():
         for query, raw_vec in raw_cache.items():
             proj_vec = projection(raw_vec.to(device))
-            proj_vec = F.normalize(proj_vec.unsqueeze(0), dim=1).squeeze(0).cpu()  # L2-norm (256,)
+            proj_vec = proj_vec.cpu()  # (256,)
             projected_cache[query.lower().strip()] = proj_vec
 
     return projected_cache, projection

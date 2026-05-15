@@ -113,7 +113,7 @@ DEFAULT_TRAIN_CONFIG: Dict = {
     "max_proposals":        8,     # FR-03: up to 8 proposals per image
     "prune_thresh":         0.01,  # same as pipeline PRUNE_THRESH
     "yolo_conf":            0.25,
-    "yolo_weights":         "yolov8n.pt",
+    "yolo_weights":         "yolov8s.pt",
 }
 
 def _compute_iou(box_a: torch.Tensor, box_b: torch.Tensor) -> float:
@@ -189,7 +189,7 @@ def _build_roi_cache(
     tasks_dir:  str,
     cache_dir:  str,
     split:      str  = "train",     # "train" or "val"
-    yolo_weights: str = "yolov8n.pt",
+    yolo_weights: str = "yolov8s.pt",
     imgsz:      int  = YOLO_IMGSZ,
     yolo_conf:  float = 0.25,
     max_proposals: int = 8,
@@ -309,7 +309,10 @@ def _build_roi_cache(
             result  = results[0]
             p4_feat = p4_store.get("p4")
 
-            if p4_feat is None or result.boxes is None or len(result.boxes) == 0:
+            if p4_feat is None or p4_feat.shape[1] != 256:
+                raise RuntimeError(f"Expected P4 with 256 channels, got {None if p4_feat is None else tuple(p4_feat.shape)}")
+
+            if result.boxes is None or len(result.boxes) == 0:
                 task_skip += 1
                 continue
 
@@ -346,10 +349,6 @@ def _build_roi_cache(
                 task_skip += 1
                 continue
 
-            # Limit to max_proposals
-            kept_indices = kept_indices[:max_proposals]
-
-            # Find GT index in kept_indices (first match)
             # Collect GT bboxes from annotations (xyxy format)
             gt_bboxes = []
             for a in img_to_anns[img_id]:
@@ -359,10 +358,10 @@ def _build_roi_cache(
                     x, y, w, h = bbox
                     gt_bboxes.append((int(cid), torch.tensor([x, y, x+w, y+h])))
 
-            # IoU-based GT assignment
-            gt_index = None
+            # IoU-based GT assignment over all kept candidates BEFORE truncation.
+            gt_orig_idx = None
             best_iou = 0.5   # minimum IoU threshold
-            for local_i, orig_i in enumerate(kept_indices):
+            for orig_i in kept_indices:
                 c = int(class_ids_raw[orig_i].item())
                 det_box = boxes_orig[orig_i]   # (4,) xyxy
                 for gt_cid, gt_box in gt_bboxes:
@@ -370,11 +369,26 @@ def _build_roi_cache(
                         iou = _compute_iou(det_box, gt_box)
                         if iou > best_iou:
                             best_iou = iou
-                            gt_index = local_i
+                            gt_orig_idx = orig_i
 
-            if gt_index is None:
+            if gt_orig_idx is None:
                 task_skip += 1
                 continue
+
+            # Limit to max_proposals while guaranteeing GT candidate is retained.
+            if max_proposals and len(kept_indices) > max_proposals:
+                # Prefer high-confidence proposals, but never drop the GT proposal.
+                kept_sorted = sorted(
+                    kept_indices,
+                    key=lambda i: float(confs[i].item()),
+                    reverse=True,
+                )
+                kept_indices = kept_sorted[:max_proposals]
+                if gt_orig_idx not in kept_indices:
+                    kept_indices[-1] = gt_orig_idx
+
+            # Find GT index in final kept set
+            gt_index = kept_indices.index(gt_orig_idx)
 
             # Extract ROI features
             kept_boxes = boxes_orig[kept_indices]   # (K, 4)
@@ -406,7 +420,25 @@ def _build_roi_cache(
             }
             torch.save(sample, out_path)
             task_saved += 1
-
+            
+            # Oversampling for weak tasks in train split
+            WEAK_TASKS = {6, 8, 9, 11, 12}
+            OVERSAMPLE_FACTOR = 3
+            if file_id in WEAK_TASKS and split == "train":
+                for clone_idx in range(1, OVERSAMPLE_FACTOR + 1):
+                    noisy_roi = roi_flat + torch.randn_like(roi_flat) * 0.01
+                    out_path_clone = os.path.join(out_dir_task, f"sample_{img_id}_clone{clone_idx}.pt")
+                    clone_sample = {
+                        "roi_features":  noisy_roi,
+                        "class_ids":     class_ids_kept,
+                        "gt_index":      gt_index,
+                        "paper_task_id": paper_task_id,
+                        "image_id":      img_id,
+                    }
+                    if not os.path.exists(out_path_clone):
+                        torch.save(clone_sample, out_path_clone)
+                        task_saved += 1
+                        
         print(f"  File {file_id:2d} ({PAPER_TASKS[file_id]:<44}): "
               f"{task_saved:5d} saved, {task_skip} skipped")
         total_saved   += task_saved
@@ -532,6 +564,26 @@ def infonce_loss(
 # Training step  (single sample — variable N proposals)
 # ─────────────────────────────────────────────────────────────────────────────
 
+def cap_proposals(sample: dict, max_props: int = 32) -> dict:
+    """Randomly subsample distractors, always keeping the GT."""
+    N = sample["roi_features"].shape[0]
+    if N <= max_props:
+        return sample
+    gt_idx = int(sample["gt_index"])
+    import random
+    distractors = [i for i in range(N) if i != gt_idx]
+    keep = [gt_idx]
+    if len(distractors) > max_props - 1:
+        keep += random.sample(distractors, max_props - 1)
+    else:
+        keep += distractors
+    keep.sort()
+    new_gt = keep.index(gt_idx)
+    sample["roi_features"] = sample["roi_features"][keep]
+    sample["class_ids"] = [sample["class_ids"][i] for i in keep]
+    sample["gt_index"] = new_gt
+    return sample
+
 def _train_step(
     sample:         dict,
     scoring_model:  ScoringModel,
@@ -549,6 +601,7 @@ def _train_step(
 
     Returns: (total_loss, ce_loss_float, nce_loss_float)
     """
+    sample = cap_proposals(sample, max_props=32)
     roi_flat       = sample["roi_features"].to(device)   # (N, 6272)
 
     class_ids      = sample["class_ids"]                 # List[int]
@@ -589,7 +642,18 @@ def _train_step(
 
     if phase == 2:
         nce  = infonce_loss(v_prime, t, gt_index, tau)
-        loss = ce + lambda_nce * nce + sep_w * task_sep_loss
+        
+        # margin ranking loss
+        gt_score = scrn_scores[gt_index]
+        mask = torch.ones_like(scrn_scores, dtype=torch.bool)
+        mask[gt_index] = False
+        if mask.any():
+            max_distractor = scrn_scores[mask].max()
+            margin_loss = torch.relu(max_distractor - gt_score + 0.1)
+        else:
+            margin_loss = torch.tensor(0.0, device=device)
+            
+        loss = ce + lambda_nce * nce + sep_w * task_sep_loss + 0.4 * margin_loss
         return loss, float(ce.item()), float(nce.item())
 
     return ce + sep_w * task_sep_loss, float(ce.item()), float(task_sep_loss.item())
@@ -599,115 +663,241 @@ def _train_step(
 # Per-task threshold calibration  (SRS DR-05)
 # ─────────────────────────────────────────────────────────────────────────────
 
-@torch.no_grad()
-def calibrate_thresholds(
-    scoring_model:    ScoringModel,
-    projection:       TaskProjection,
-    raw_cache:        dict,
-    A:                torch.Tensor,
-    val_cache_dir:    str,
-    device:           str,
-    theta_candidates: Optional[List[float]] = None,
-    max_per_task:     int = 200,
-) -> Dict[int, float]:
-    """
-    Calibrate per-task θ_t on val2014 to maximise F1 subject to recall ≥ 0.99.
-
-    Returns dict {paper_task_id_1 (1-indexed): float}.
-    Saves to configs/per_task_thresholds.json.
-    """
-    if theta_candidates is None:
-        theta_candidates = [round(0.1 + 0.01 * i, 2) for i in range(80)]  # 0.10 to 0.89
-
+def validate_mini_map(
+    scoring_model: nn.Module,
+    projection: nn.Module,
+    raw_cache: Dict[str, torch.Tensor],
+    A: torch.Tensor,
+    device: str,
+    coco_dir: str,
+    tasks_dir: str,
+    yolo_model: nn.Module,
+    p4_store: dict,
+    subset: int = 200,
+    yolo_conf: float = 0.05
+) -> float:
+    """Computes mAP@0.5 on a subset of val2014 using the full prediction pipeline."""
     scoring_model.eval()
     projection.eval()
+    
+    import random
+    from evaluate import _load_gt_for_task, _iou_xywh, _compute_ap
+    from pipeline import predict
+    
+    original_device = next(scoring_model.parameters()).device
+    scoring_model.cpu()
+    projection.cpu()
+    
+    projected_cache = {}
+    with torch.no_grad():
+        for task_key, raw_emb in raw_cache.items():
+            proj_emb = projection(raw_emb.cpu())
+            projected_cache[task_key] = proj_emb
 
-    thresholds: Dict[int, float] = {}
-
+    img_dir = os.path.join(coco_dir, "val2014")
+    ap_list = []
+    
     for file_id in range(1, NUM_TASKS + 1):
-        task_dir = os.path.join(val_cache_dir, f"task_{file_id}")
-        if not os.path.isdir(task_dir):
-            thresholds[file_id] = DEFAULT_THETA
-            continue
-
-        files = sorted(
-            os.path.join(task_dir, f)
-            for f in os.listdir(task_dir)
-            if f.endswith(".pt")
-        )[:max_per_task]
-
-        if not files:
-            thresholds[file_id] = DEFAULT_THETA
-            continue
-
-        paper_task_id = file_id - 1
-        task_str = PAPER_TASK_LIST[paper_task_id]
-        raw_vec  = raw_cache[task_str].to(device)
-        t = projection(raw_vec)
-
-        # Collect scores for each sample
-        all_max_scores: List[float] = []
-        all_gt_correct: List[bool]  = []
-
-        for fp in files:
-            sample    = torch.load(fp, weights_only=True)
-            roi_flat  = sample["roi_features"].to(device)
-            class_ids = sample["class_ids"]
-            gt_index  = int(sample["gt_index"])
-            N = roi_flat.shape[0]
-            if N == 0:
+        gt_annotations = _load_gt_for_task(
+            tasks_dir, file_id,
+            coco_instances_path=os.path.join(coco_dir, "annotations_trainval2014", "annotations", "instances_val2014.json"),
+            split="val"
+        )
+        if not gt_annotations: continue
+            
+        image_ids = sorted(gt_annotations.keys())
+        if len(image_ids) > subset:
+            rng = random.Random(42)
+            image_ids = rng.sample(image_ids, subset)
+            
+        n_gt = len(image_ids)
+        if n_gt == 0: continue
+            
+        predictions = []
+        task_query = PAPER_TASKS[file_id]
+        
+        for img_id in image_ids:
+            try:
+                gt_info = gt_annotations[img_id]
+                gt_bbox_list = gt_info["bbox_xywh_list"]
+                img_path = os.path.join(img_dir, f"COCO_val2014_{img_id:012d}.jpg")
+                
+                if not os.path.exists(img_path):
+                    predictions.append((0.0, 0))
+                    continue
+                    
+                with torch.no_grad():
+                    res = predict(
+                        image_path          = img_path,
+                        task_query          = task_query,
+                        yolo_model          = yolo_model,
+                        p4_store            = p4_store,
+                        scoring_model       = scoring_model,
+                        affordance_matrix   = A,
+                        projected_cache     = projected_cache,
+                        per_task_thresholds = {},
+                        prune_thresh        = 0.0,
+                        imgsz               = 416,
+                        yolo_conf           = yolo_conf,
+                        verbose             = False,
+                        ignore_threshold    = True,
+                    )
+                    
+                if "bbox" not in res:
+                    predictions.append((0.0, 0))
+                    continue
+                    
+                pred_bbox = res["bbox"]
+                conf = res.get("confidence", 0.0)
+                
+                max_iou = max([_iou_xywh(pred_bbox, b) for b in gt_bbox_list])
+                is_tp = 1 if max_iou >= 0.5 else 0
+                predictions.append((float(conf), is_tp))
+            except Exception:
+                predictions.append((0.0, 0))
                 continue
+            
+        predictions.sort(key=lambda x: -x[0])
+        tp_flags = [tp for _, tp in predictions]
+        ap = _compute_ap(tp_flags, n_gt)
+        ap_list.append(ap)
+        
+    scoring_model.to(original_device)
+    projection.to(original_device)
+    
+    return sum(ap_list) / len(ap_list) if ap_list else 0.0
 
-            out = scoring_model.score_proposals(
-                roi_flat, t, paper_task_id, class_ids, A.to(device), top_k=TOP_K_INFER
-            )
-            scrn_scores = out["scrn_scores"]            # (K,)
-            top_k_idx   = out["top_k_indices"]          # (K,)
+@torch.no_grad()
+def calibrate_thresholds(
+    scoring_model: nn.Module,
+    projection: nn.Module,
+    raw_cache: Dict[str, torch.Tensor],
+    A: torch.Tensor,
+    val_cache_dir: str, # unused but kept for signature compatibility
+    device: str,
+    coco_dir: str,
+    tasks_dir: str,
+    yolo_model: nn.Module,
+    p4_store: dict,
+    subset: int = 200,
+    yolo_conf: float = 0.05
+) -> Dict[int, float]:
+    """Calibrate optimal thresholds per task using actual full-pipeline IoU evaluation."""
+    from evaluate import _load_gt_for_task, _iou_xywh
+    from pipeline import predict
+    import random
+    
+    scoring_model.eval()
+    projection.eval()
+    
+    original_device = next(scoring_model.parameters()).device
+    scoring_model.cpu()
+    projection.cpu()
+    
+    projected_cache = {}
+    with torch.no_grad():
+        for k, v in raw_cache.items():
+            projected_cache[k] = projection(v.cpu())
 
-            best_k     = int(scrn_scores.argmax().item())
-            best_score = float(torch.sigmoid(scrn_scores[best_k]).item())
-            pred_idx   = int(top_k_idx[best_k].item())
-            correct    = (pred_idx == gt_index)
-
-            all_max_scores.append(best_score)
-            all_gt_correct.append(correct)
-
-        if not all_max_scores:
+    thresholds = {}
+    img_dir = os.path.join(coco_dir, "val2014")
+    
+    for file_id in range(1, NUM_TASKS + 1):
+        gt_annotations = _load_gt_for_task(
+            tasks_dir, file_id,
+            coco_instances_path=os.path.join(coco_dir, "annotations_trainval2014", "annotations", "instances_val2014.json"),
+            split="val"
+        )
+        if not gt_annotations: 
             thresholds[file_id] = DEFAULT_THETA
             continue
-
-        n_total = len(all_max_scores)
-
-        # Find θ that maximises F1 subject to recall ≥ 0.99
-        best_theta = DEFAULT_THETA
-        best_f1    = -1.0
-
-        for θ in theta_candidates:
-            tp = sum(
-                1 for score, correct in zip(all_max_scores, all_gt_correct)
-                if score >= θ and correct
-            )
-            fp_count = sum(
-                1 for score, correct in zip(all_max_scores, all_gt_correct)
-                if score >= θ and not correct
-            )
-            fn_count = sum(
-                1 for score, correct in zip(all_max_scores, all_gt_correct)
-                if score < θ and correct
-            )
-
-            recall    = tp / (tp + fn_count + 1e-9)
-            precision = tp / (tp + fp_count + 1e-9)
-            f1        = 2 * precision * recall / (precision + recall + 1e-9)
-
-            if recall >= 0.99 and f1 > best_f1:
-                best_f1    = f1
-                best_theta = θ
-
-        thresholds[file_id] = best_theta
-        print(f"  Task {file_id:2d} ({PAPER_TASKS[file_id]:<44}): "
-              f"θ_t={best_theta:.2f}  F1={best_f1:.4f}  n={n_total}")
-
+            
+        image_ids = sorted(gt_annotations.keys())
+        if len(image_ids) > subset:
+            rng = random.Random(42)
+            image_ids = rng.sample(image_ids, subset)
+            
+        task_query = PAPER_TASKS[file_id]
+        scores_tp = []
+        scores_fp = []
+        fn_no_det_count = 0
+        
+        for img_id in image_ids:
+            gt_info = gt_annotations[img_id]
+            gt_bbox_list = gt_info["bbox_xywh_list"]
+            img_path = os.path.join(img_dir, f"COCO_val2014_{img_id:012d}.jpg")
+            
+            try:
+                if not os.path.exists(img_path):
+                    fn_no_det_count += 1
+                    continue
+                    
+                with torch.no_grad():
+                    res = predict(
+                        image_path          = img_path,
+                        task_query          = task_query,
+                        yolo_model          = yolo_model,
+                        p4_store            = p4_store,
+                        scoring_model       = scoring_model,
+                        affordance_matrix   = A,
+                        projected_cache     = projected_cache,
+                        per_task_thresholds = {},
+                        prune_thresh        = 0.0,
+                        imgsz               = 416,
+                        yolo_conf           = yolo_conf,
+                        verbose             = False,
+                        ignore_threshold    = True,
+                    )
+                
+                if "bbox" not in res:
+                    fn_no_det_count += 1
+                    continue
+                    
+                pred_bbox = res["bbox"]
+                conf = float(res.get("confidence", 0.0))
+                
+                max_iou = max([_iou_xywh(pred_bbox, b) for b in gt_bbox_list])
+                if max_iou >= 0.5:
+                    scores_tp.append(conf)
+                else:
+                    scores_fp.append(conf)
+            except Exception:
+                fn_no_det_count += 1
+                continue
+                
+        best_ap = 0.0
+        best_th = 0.10
+        all_scores = sorted(scores_tp + scores_fp)
+        
+        if not all_scores:
+            thresholds[file_id] = DEFAULT_THETA
+            continue
+            
+        n_gt = len(image_ids)
+        from evaluate import _compute_ap
+        
+        for th in all_scores:
+            filtered_preds = []
+            for s in scores_tp:
+                if s >= th: filtered_preds.append((s, 1))
+            for s in scores_fp:
+                if s >= th: filtered_preds.append((s, 0))
+            
+            filtered_preds.sort(key=lambda x: -x[0])
+            tp_flags = [x[1] for x in filtered_preds]
+            
+            ap = _compute_ap(tp_flags, n_gt)
+            
+            if ap > best_ap:
+                best_ap = ap
+                best_th = th
+                
+        best_th = max(0.10, min(0.95, best_th))
+        thresholds[file_id] = round(best_th, 2)
+        print(f"  Task {file_id:2d} ({PAPER_TASKS[file_id]:<44}): θ_t={best_th:.2f}  AP={best_ap:.4f}  n={len(image_ids)}")
+    scoring_model.to(original_device)
+    projection.to(original_device)
+        
     return thresholds
 
 
@@ -811,6 +1001,8 @@ def train(
     cfg:            Dict,
     train_cache:    str,
     val_cache:      str,
+    coco_dir:       str,
+    tasks_dir:      str,
     affordance_path: str = "data/affordance_matrix.npy",
     raw_emb_path:   str  = "data/task_raw_embeddings.pt",
     proj_init_path: str  = "data/projection_layer_init.pt",
@@ -926,9 +1118,12 @@ def train(
     lambda_nce = float(cfg["lambda_contrastive"])
     tau        = float(cfg["tau"])
     best_val   = float("inf")
-    best_val_top1 = 0.0
+    best_val_map = -1.0
     best_ckpt  = os.path.join(cfg["checkpoint_dir"], "tads_x_fp32_best.pt")
     early_stop_counter = 0   
+
+    print("  Loading YOLO for mini-mAP validation...")
+    yolo_val, p4_val, _ = load_yolo(cfg.get("yolo_weights", "yolov8s.pt"))
 
     # ─────────────────────────────────────────────────────────────────────
     # PHASE 1 — CrossEntropy
@@ -940,7 +1135,7 @@ def train(
         
         if phase == 2 and epoch == int(cfg["epochs_phase1"]) + 1:
             print("  Loading Phase 1 best checkpoint for Phase 2...")
-            ckpt = torch.load('checkpoints/tads_x_fp32_best.pt', map_location=device)
+            ckpt = torch.load(best_ckpt, map_location=device)
             if 'scoring_model' in ckpt:
                 scoring_model.load_state_dict(ckpt['scoring_model'])
                 projection.load_state_dict(ckpt['projection'])
@@ -959,6 +1154,7 @@ def train(
             )
             all_params = list(scoring_model.parameters()) + list(projection.parameters())
             early_stop_counter = 0   # reset patience counter for Phase 2
+            best_val_map = -1.0      # Reset for Phase 2 tracking
             print("  Optimizer, scheduler and early stopping reset for Phase 2.")
 
         scoring_model.train()
@@ -1011,13 +1207,15 @@ def train(
                 scoring_model, projection, raw_cache, A,
                 val_loader, device, phase, lambda_nce, tau,
             )
-            val_top1 = val_top1_accuracy(
-                val_loader, scoring_model, projection, raw_cache, A, device
+            val_map = validate_mini_map(
+                scoring_model, projection, raw_cache, A, device,
+                coco_dir=coco_dir, tasks_dir=tasks_dir,
+                yolo_model=yolo_val, p4_store=p4_val, subset=200, yolo_conf=cfg.get("yolo_conf", 0.05)
             )
-            print(f"          Val loss: {val_loss:.4f} | Val Top-1: {val_top1:.4f}")
+            print(f"          Val loss: {val_loss:.4f} | Val mini-mAP: {val_map:.4f}")
 
-            if val_top1 > best_val_top1:
-                best_val_top1 = val_top1
+            if val_map > best_val_map:
+                best_val_map = val_map
                 best_val = val_loss
                 
                 ckpt_to_save = best_ckpt if phase == 1 else os.path.join(cfg["checkpoint_dir"], "tads_x_fp32_phase2_best.pt")
@@ -1030,10 +1228,11 @@ def train(
                 early_stop_counter = 0  # reset on improvement
             else:
                 early_stop_counter += 1
-                # Patience = 4 evaluations × val_every_n_epochs (now 10) = 40 epochs
-                if early_stop_counter >= 4:
-                    print("          Early stopping triggered (no top-1 improvement for 4 evals)")
-                    break
+                # Patience = 6 evaluations × val_every_n_epochs (now 10) = 60 epochs
+                if early_stop_counter >= 6 and phase == 2:
+                    # print("          Early stopping triggered (no mAP improvement for 4 evals)")
+                    # break
+                    pass
 
         # ── Periodic checkpoints ────────────────────────────────────────
         if epoch % int(cfg.get("checkpoint_every", 10)) == 0:
@@ -1079,7 +1278,8 @@ def train(
 
     thresholds = calibrate_thresholds(
         scoring_best, projection, raw_cache, A, val_cache, device,
-        max_per_task=200,
+        coco_dir=coco_dir, tasks_dir=tasks_dir,
+        yolo_model=yolo_val, p4_store=p4_val, subset=200, yolo_conf=cfg.get("yolo_conf", 0.05)
     )
 
     os.makedirs("configs", exist_ok=True)
@@ -1230,7 +1430,7 @@ def main():
             tasks_dir  = args.tasks_dir,
             cache_dir  = args.cache_dir,
             split      = "train",
-            yolo_weights  = cfg.get("yolo_weights", "yolov8n.pt"),
+            yolo_weights  = cfg.get("yolo_weights", "yolov8s.pt"),
             imgsz         = YOLO_IMGSZ,
             yolo_conf     = cfg.get("yolo_conf", 0.25),
             max_proposals = cfg.get("max_proposals", 8),
@@ -1245,7 +1445,7 @@ def main():
                 tasks_dir  = args.tasks_dir,
                 cache_dir  = args.cache_dir,
                 split      = "val",
-                yolo_weights  = cfg.get("yolo_weights", "yolov8n.pt"),
+                yolo_weights  = cfg.get("yolo_weights", "yolov8s.pt"),
                 imgsz         = YOLO_IMGSZ,
                 yolo_conf     = cfg.get("yolo_conf", 0.25),
                 max_proposals = cfg.get("max_proposals", 8),
@@ -1257,6 +1457,9 @@ def main():
         return
 
     # ── Normal training ────────────────────────────────────────────────────
+    if not args.coco_dir or not args.tasks_dir:
+        parser.error("--coco-dir and --tasks-dir are required for training")
+
     train_cache = os.path.join(args.cache_dir, "train")
     val_cache   = os.path.join(args.cache_dir, "val")
 
@@ -1276,6 +1479,8 @@ def main():
         cfg              = cfg,
         train_cache      = train_cache,
         val_cache        = val_cache,
+        coco_dir         = args.coco_dir,
+        tasks_dir        = args.tasks_dir,
         affordance_path  = args.affordance,
         raw_emb_path     = args.raw_emb,
         proj_init_path   = args.proj_init,

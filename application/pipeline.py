@@ -94,10 +94,10 @@ from models.scrn import SCRN
 # ─────────────────────────────────────────────────────────────────────────────
 
 WORKING_DIM    = 256
-ROI_FEAT_DIM   = 128 * 7 * 7          # 6272  (P4 channels × 7 × 7 ROI output)
+ROI_FEAT_DIM   = 256 * 7 * 7          # 12544 (P4 channels × 7 × 7 ROI output)
 YOLO_IMGSZ     = 416                  # gives P4 at exactly 26×26 (stride 16)
 PRUNE_THRESH   = 0.01                 # default affordance pruning threshold (FR-02)
-TOP_K_INFER    = 5                    # max candidates passed to SCRN at inference
+TOP_K_INFER    = 20                   # max candidates passed to SCRN at inference
 DEFAULT_THETA  = 0.40                 # fallback if per_task_thresholds missing a task
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -464,12 +464,12 @@ def _make_p4_hook(store: dict):
     return hook
 
 
-def load_yolo(weights: str = "yolov8n.pt"):
+def load_yolo(weights: str = "yolov8s.pt"):
     """
-    Load YOLOv8n and register a P4 forward hook.
+    Load YOLOv8s and register a P4 forward hook.
 
-    The P4 feature map (26×26×128 at imgsz=416) is extracted from
-    `model.model.model[9]` — the C2f block at stride 16.
+    The P4 feature map (26×26×256 at imgsz=416) is extracted from
+    `model.model.model[12]` — the C2f block at stride 16.
 
     Parameters
     ----------
@@ -486,7 +486,7 @@ def load_yolo(weights: str = "yolov8n.pt"):
     yolo  = YOLO(weights)
     store = {}
 
-    # SRS FR-01: hook on model.model.model[9] (C2f block, stride 16)
+    # SRS FR-01: hook on model.model.model[12] (C2f block, stride 16)
     handle = yolo.model.model[12].register_forward_hook(_make_p4_hook(store))
     return yolo, store, handle
 
@@ -522,6 +522,7 @@ def predict(
     imgsz:               int   = YOLO_IMGSZ,
     yolo_conf:           float = 0.25,
     verbose:             bool  = False,
+    ignore_threshold:    bool  = False,
 ) -> dict:
     """
     Full TADS-X inference for a single image.
@@ -575,10 +576,11 @@ def predict(
     )
     result = results[0]
 
-    p4_feat  = p4_store.get("p4")                  # (1, 128, fh, fw)
-    if p4_feat is None:
+    p4_feat  = p4_store.get("p4")                  # (1, 256, fh, fw)
+    if p4_feat is None or p4_feat.shape[1] != 256:
         raise RuntimeError(
-            "P4 hook did not fire.  Make sure the hook was registered with load_yolo()."
+            f"Expected P4 with 256 channels, got {None if p4_feat is None else tuple(p4_feat.shape)}. "
+            f"Make sure the hook was registered with load_yolo() and using YOLOv8s."
         )
 
     orig_h, orig_w = result.orig_shape             # original image dimensions
@@ -666,7 +668,7 @@ def predict(
 
     theta = per_task_thresholds.get(paper_task_id_1, DEFAULT_THETA)
 
-    if best_score_prob < theta:
+    if not ignore_threshold and best_score_prob < theta:
         if verbose:
             print(f"  [predict] Best score {best_score_prob:.4f} < θ_t={theta:.4f} → no-match")
         return _no_match(f"below threshold (score={best_score_prob:.4f}, θ_t={theta:.4f})")
@@ -743,7 +745,7 @@ class TADSX:
         raw_emb_path:          str  = "data/task_raw_embeddings.pt",
         proj_weights_path:     str  = "data/projection_layer_trained.pt",
         thresholds_path:       str  = "configs/per_task_thresholds.json",
-        yolo_weights:          str  = "yolov8n.pt",
+        yolo_weights:          str  = "yolov8s.pt",
         imgsz:                 int  = YOLO_IMGSZ,
         device:                str  = "cpu",
     ) -> "TADSX":
@@ -769,9 +771,29 @@ class TADSX:
         A_np = np.load(affordance_path)
         A    = torch.from_numpy(A_np).float()
 
+        # ── Load Checkpoint State ────────────────────────────────────
+        try:
+            state = torch.load(checkpoint_path, map_location=device, weights_only=True)
+        except TypeError:
+            state = torch.load(checkpoint_path, map_location=device)
+
         # ── Task embeddings ──────────────────────────────────────────
         from embeddings import load_projected_embeddings
-        proj_cache, _ = load_projected_embeddings(raw_emb_path, proj_weights_path, device)
+        if isinstance(state, dict) and 'projection' in state:
+            from embeddings import TaskProjection
+            proj = TaskProjection().to(device)
+            proj.load_state_dict(state['projection'])
+            proj.eval()
+            
+            raw_embs = torch.load(raw_emb_path, map_location=device)
+            proj_cache = {}
+            for k, v in raw_embs.items():
+                v_tensor = v.to(device).unsqueeze(0)
+                with torch.no_grad():
+                    p_out = proj(v_tensor).squeeze(0)
+                proj_cache[k] = p_out.detach()
+        else:
+            proj_cache, _ = load_projected_embeddings(raw_emb_path, proj_weights_path, device)
 
         # ── Per-task thresholds ──────────────────────────────────────
         if os.path.exists(thresholds_path):
@@ -785,9 +807,11 @@ class TADSX:
 
         # ── ScoringModel ─────────────────────────────────────────────
         scoring = ScoringModel()
-        state   = torch.load(checkpoint_path, map_location=device,
-                             weights_only=True)
-        scoring.load_state_dict(state)
+        if isinstance(state, dict) and 'scoring_model' in state:
+            scoring.load_state_dict(state['scoring_model'])
+        else:
+            scoring.load_state_dict(state)
+            
         scoring.to(device).eval()
 
         # ── YOLO + P4 hook ───────────────────────────────────────────
@@ -804,7 +828,7 @@ class TADSX:
         )
 
     # ------------------------------------------------------------------
-    def predict(self, image_path: str, task_query: str, verbose: bool = False) -> dict:
+    def predict(self, image_path: str, task_query: str, verbose: bool = False, ignore_threshold: bool = False, yolo_conf: float = 0.25, prune_thresh: float = PRUNE_THRESH) -> dict:
         """
         Single-image inference.
 
@@ -813,6 +837,9 @@ class TADSX:
         image_path : str  — path to image
         task_query : str  — SRS task string or any query in the embedding cache
         verbose    : bool
+        ignore_threshold : bool — bypass calibration threshold
+        yolo_conf  : float — YOLO detection confidence threshold
+        prune_thresh: float — affordance threshold
 
         Returns
         -------
@@ -827,8 +854,11 @@ class TADSX:
             affordance_matrix   = self.affordance_matrix,
             projected_cache     = self.projected_cache,
             per_task_thresholds = self.per_task_thresholds,
+            prune_thresh        = prune_thresh,
             imgsz               = self.imgsz,
             verbose             = verbose,
+            ignore_threshold    = ignore_threshold,
+            yolo_conf           = yolo_conf,
         )
 
 
