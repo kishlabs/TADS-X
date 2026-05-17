@@ -80,24 +80,37 @@ If nothing in the scene is safe or suitable?
 Upload any image, choose a task, and watch TADS‑X lock onto the right object in seconds.  
 No installation. No setup. Just **intent in focus**.
 
----
+## 💻 Setup and Quick Start
 
-## 💻 One Command to Start
+To test TADS-X locally, follow these steps to set up your environment and run the model.
 
+**1. Create and Activate a Virtual Environment**
+Using Conda (recommended):
 ```bash
-pip install tadsx
+conda create -n tadsx python=3.10 -y
+conda activate tadsx
+```
+*(Alternatively, use Python venv: `python -m venv tadsx` and then `tadsx\Scripts\activate` on Windows or `source tadsx/bin/activate` on Linux/Mac)*
+
+**2. Install Dependencies**
+```bash
+pip install -r requirements.txt
 ```
 
-```python
-from tadsx import TADSX
+**3. Run TADS-X Inference**
+You can test the model on any single image by specifying the image path, the task you want to perform, and the trained checkpoint. 
 
-model = TADSX.from_checkpoint()
-result = model.predict('living_room.jpg', 'sit comfortably')
-print(result)
-# → {'bbox': (...), 'class': 'couch', 'confidence': 0.93}
+*General Command:*
+```bash
+python evaluate.py --image <path_to_image> --task "<task_query>" --checkpoint checkpoints\tads_x_fp32_best.pt --draw
 ```
 
----
+*Example Command:*
+```bash
+python evaluate.py --image E:\DVCon\COCO\val2014\COCO_val2014_000000447854.jpg --task "open parcel" --checkpoint checkpoints\tads_x_fp32_best.pt --draw
+```
+
+The `--draw` flag will visually display the original image with the predicted bounding box overlay, making it easy to verify the model's accuracy.
 
 ## 🏆 Performance That Speaks
 

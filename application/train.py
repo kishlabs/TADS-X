@@ -1006,6 +1006,8 @@ def train(
     affordance_path: str = "data/affordance_matrix.npy",
     raw_emb_path:   str  = "data/task_raw_embeddings.pt",
     proj_init_path: str  = "data/projection_layer_init.pt",
+    resume_checkpoint: Optional[str] = None,
+    resume_epoch:      Optional[int] = None,
 ) -> None:
     """
     Full training procedure — Phase 1 then Phase 2.
@@ -1130,10 +1132,41 @@ def train(
     # ─────────────────────────────────────────────────────────────────────
     total_epochs = int(cfg["epochs_phase1"]) + int(cfg["epochs_phase2"])
 
-    for epoch in range(1, total_epochs + 1):
+    # ── Resume logic (if requested) ───────────────────────────────────
+    if resume_checkpoint is not None and resume_epoch is not None:
+        print(f"  Resuming from checkpoint {resume_checkpoint} at epoch {resume_epoch}")
+        ckpt = torch.load(resume_checkpoint, map_location=device)
+        if 'scoring_model' in ckpt:
+            scoring_model.load_state_dict(ckpt['scoring_model'])
+            projection.load_state_dict(ckpt['projection'])
+        else:
+            scoring_model.load_state_dict(ckpt)
+        scoring_model.to(device)
+        projection.to(device)
+
+        # Create a fresh optimizer and scheduler for the remaining epochs
+        remaining_epochs = total_epochs - resume_epoch
+        optimizer = torch.optim.AdamW([
+            {"params": scoring_model.parameters(), "weight_decay": 5e-3},
+            {"params": projection.parameters(),    "weight_decay": 1e-2}
+        ], lr=float(cfg["learning_rate"]) * 0.5)   # same as Phase 2 start LR
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer,
+            T_max = remaining_epochs,
+            eta_min = 1e-6,
+        )
+        all_params = list(scoring_model.parameters()) + list(projection.parameters())
+        start_epoch = resume_epoch + 1
+        best_val_map = -1.0
+        early_stop_counter = 0
+        print(f"  Optimizer, scheduler reset.  Will run epochs {start_epoch}‑{total_epochs}.")
+    else:
+        start_epoch = 1
+
+    for epoch in range(start_epoch, total_epochs + 1):
         phase = 1 if epoch <= int(cfg["epochs_phase1"]) else 2
         
-        if phase == 2 and epoch == int(cfg["epochs_phase1"]) + 1:
+        if phase == 2 and epoch == int(cfg["epochs_phase1"]) + 1 and resume_checkpoint is None:
             print("  Loading Phase 1 best checkpoint for Phase 2...")
             ckpt = torch.load(best_ckpt, map_location=device)
             if 'scoring_model' in ckpt:
@@ -1409,6 +1442,10 @@ def main():
                         help="Cap images per task during cache build (debug)")
     parser.add_argument("--smoke-test",    action="store_true",
                         help="Run offline smoke-test (no data needed)")
+    parser.add_argument("--resume-checkpoint", type=str, default=None,
+                        help="Checkpoint to resume Phase 2 from (e.g. checkpoints/tads_x_fp32_phase2_best.pt)")
+    parser.add_argument("--resume-epoch", type=int, default=None,
+                        help="Epoch number of the checkpoint (resume from next epoch)")
     args = parser.parse_args()
 
     if args.smoke_test:
@@ -1484,6 +1521,8 @@ def main():
         affordance_path  = args.affordance,
         raw_emb_path     = args.raw_emb,
         proj_init_path   = args.proj_init,
+        resume_checkpoint = args.resume_checkpoint,
+        resume_epoch      = args.resume_epoch,
     )
 
 
